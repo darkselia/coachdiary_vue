@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import PageFooter from '@/components/PageFooter.vue';
+import { API_BASE } from '@/api/http';
 
 const email = 'или в сообщения группы ВКонтакте';
 const companyName = 'Дневником Тренера';
-const domain = 'https://coachdiary.ru';
+const domain = API_BASE;
 </script>
 
 <template>

@@ -1,23 +1,11 @@
 import { ref } from 'vue';
-
-export function getCookie(name: string): string | null {
-  const cookieArr = document.cookie.split(';');
-
-  for (const cookie of cookieArr) {
-    const cookiePair = cookie.split('=');
-
-    if (name === cookiePair[0].trim()) {
-      return decodeURIComponent(cookiePair[1]);
-    }
-  }
-  return null;
-}
+import { API_BASE, getCookie } from '@/api/http';
 
 export function get(
   url: string,
   data?: Record<string | number, unknown | unknown[]>,
 ): Promise<Response> {
-  const urlObj = new URL(location.origin + url);
+  const urlObj = new URL(API_BASE + url);
   for (const key in data) {
     if (Array.isArray(data[key])) {
       for (const item of data[key] as unknown[]) {
@@ -42,7 +30,7 @@ export function post(
   contentType?: string,
 ): Promise<Response> {
   const isFormData = data instanceof FormData;
-  return fetch(location.origin + url, {
+  return fetch(API_BASE + url, {
     method: 'POST',
     headers: {
       ...(isFormData ? {} : { 'Content-Type': contentType ?? 'application/json' }),
@@ -54,7 +42,7 @@ export function post(
 }
 
 export function put(url: string, data?: Record<string | number, unknown>): Promise<Response> {
-  return fetch(location.origin + url, {
+  return fetch(API_BASE + url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -65,7 +53,7 @@ export function put(url: string, data?: Record<string | number, unknown>): Promi
 }
 
 export function patch(url: string, data?: Record<string | number, unknown>): Promise<Response> {
-  return fetch(location.origin + url, {
+  return fetch(API_BASE + url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +64,7 @@ export function patch(url: string, data?: Record<string | number, unknown>): Pro
 }
 
 export function del(url: string): Promise<Response> {
-  return fetch(location.origin + url, {
+  return fetch(API_BASE + url, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
