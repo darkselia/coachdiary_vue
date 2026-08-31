@@ -5,20 +5,24 @@ import TopPanel from '@/components/TopPanel.vue';
 import BottomSheetWithButton from '@/components/BottomSheetWithButton.vue';
 
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { del, get, getErrorMessage, showConfirmDialog } from '@/utils';
-import type { StandardResponse } from '@/types/types';
 import router from '@/router';
 import { toast } from 'vue-sonner';
 import { useDisplay } from 'vuetify';
-import SideNavButtons from '@/components/SideNavButtons.vue';
+import SideNavButtons from '@/components/shared/ui/SideNavButtons.vue';
+import { getErrorText } from '@/api/http';
+import { useStandardsStore } from '@/stores/standards';
+import { useUIStore } from '@/stores/ui';
+import type { StandardType } from '@/types/standard';
 
 const { smAndUp, width } = useDisplay();
+const standardsStore = useStandardsStore();
+const uiStore = useUIStore();
 
 const selectedLevelNumber = ref(-1);
-const pageType = ref<'standards' | 'technical'>('standards');
+const pageType = ref<StandardType>('physical');
 
 const selectedStandardId = ref(-1);
-const standards = ref<StandardResponse[]>([]);
+const standards = computed(() => standardsStore.standards);
 
 const levelButtonText = computed(() =>
   selectedLevelNumber.value != -1 ? selectedLevelNumber.value + ' год обучения' : 'Года обучения',
@@ -45,7 +49,7 @@ async function setFirst({
 const levels = computed(() =>
   Array.from(
     standards.value
-      .filter((standard) => standard.has_numeric_value === (pageType.value === 'standards'))
+      .filter((standard) => standard.has_numeric_value === (pageType.value === 'physical'))
       .reduce((acc, v) => {
         for (const level of v.levels) {
           acc.add(level.level_number);
@@ -57,7 +61,7 @@ const levels = computed(() =>
 
 const simplifiedStandards = computed(() =>
   standards.value
-    .filter((standard) => standard.has_numeric_value === (pageType.value === 'standards'))
+    .filter((standard) => standard.has_numeric_value === (pageType.value === 'physical'))
     .filter((standard) =>
       standard.levels.some((level) => level.level_number === selectedLevelNumber.value),
     )
@@ -85,47 +89,34 @@ async function deleteStandard(inAllLevels: boolean): Promise<void> {
     ? 'Вы уверены, что хотите удалить этот норматив для всех уровней?'
     : `Вы уверены, что хотите удалить этот норматив для текущего уровня: ${selectedLevelNumber.value}?`;
 
-  const deleteURl = inAllLevels
-    ? `/api/standards/${selectedStandardId.value}/`
-    : `/api/standards/${selectedStandardId.value}/remove_level/?level_number=${selectedLevelNumber.value}`;
-
-  await showConfirmDialog({
+  await uiStore.showConfirmDialog({
     title: 'Удаление норматива',
     text: dialogText,
   });
 
   try {
-    const response = await del(deleteURl);
-    if (response.ok) {
-      if (inAllLevels) {
-        standards.value = standards.value.filter(
-          (standard) => standard.id !== selectedStandardId.value,
-        );
-      } else {
-        standards.value = standards.value.map((standard) => {
-          if (standard.id === selectedStandardId.value) {
-            return {
-              ...standard,
-              levels: standard.levels.filter(
-                (level) => level.level_number !== selectedLevelNumber.value,
-              ),
-            };
-          }
-          return standard;
-        });
-      }
-      await setFirst();
-      toast.success('Норматив был успешно удален');
+    if (inAllLevels) {
+      await standardsStore.deleteStandard(selectedStandardId.value);
     } else {
-      toast.error(getErrorMessage(await response.json()));
+      await standardsStore.removeStandardLevel(selectedStandardId.value, selectedLevelNumber.value);
     }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+    await setFirst();
+    toast.success('Норматив был успешно удален');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   }
 }
 
 onMounted(async () => {
-  standards.value = await get('/api/standards/').then((res) => res.json());
+  try {
+    await standardsStore.fetchStandards();
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
+  }
   await setFirst();
 });
 </script>
@@ -184,7 +175,7 @@ onMounted(async () => {
       <template #default="{ toggle }">
         <SideNavButtons
           v-model="pageType"
-          :types="{ first: 'standards', second: 'technical' }"
+          :types="{ first: 'physical', second: 'technical' }"
           :labels="{ first: 'Физические', second: 'Технические' }"
           @typeChanged="setFirst({ level: false })"
         />
@@ -200,7 +191,7 @@ onMounted(async () => {
   </div>
 
   <div v-auto-animate :class="{ 'technical-grid': pageType === 'technical' }" class="grid">
-    <div v-if="pageType === 'standards'" class="standards-tables">
+    <div v-if="pageType === 'physical'" class="standards-tables">
       <template v-if="currentStandardLevels">
         <div class="standards-tables-title">
           {{
@@ -249,7 +240,7 @@ onMounted(async () => {
     <div v-if="smAndUp">
       <SideNavButtons
         v-model="pageType"
-        :types="{ first: 'standards', second: 'technical' }"
+        :types="{ first: 'physical', second: 'technical' }"
         :labels="{ first: 'Физические', second: 'Технические' }"
         @typeChanged="setFirst({ level: false })"
       />
@@ -257,7 +248,7 @@ onMounted(async () => {
         v-model:selected-id="selectedStandardId"
         :data="simplifiedStandards"
         :is-standard-type-technical="pageType === 'technical'"
-        :title="pageType === 'standards' ? 'Физические' : 'Технические'"
+        :title="pageType === 'physical' ? 'Физические' : 'Технические'"
         class="data-table-side-nav"
         has-delete-menu
         @delete="deleteStandard"

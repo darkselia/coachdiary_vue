@@ -3,35 +3,32 @@ import TopPanel from '@/components/TopPanel.vue';
 import FieldSet from '@/components/FieldSet.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { StandardRequest, StandardResponse } from '@/types/types';
-import { get, getErrorMessage, post, put } from '@/utils';
+import type {
+  StandardEvaluationType,
+  StandardFormLevel,
+  StandardFormPageType,
+  StandardType,
+  StandardRequest,
+} from '@/types/standard';
 import { useDisplay } from 'vuetify';
 import { toast } from 'vue-sonner';
+import { getErrorText } from '@/api/http';
+import { useStandardsStore } from '@/stores/standards';
 
 const route = useRoute();
 const { mobile } = useDisplay();
-const pageType = ref(route.name as 'create-standard' | 'update-standard');
+const standardsStore = useStandardsStore();
+const pageType = ref<StandardFormPageType>(route.name as StandardFormPageType);
 const isLoading = ref(false);
 
 const standardName = ref('');
-const standardType = ref<'physical' | 'technical' | null>(null);
-const evaluationType = ref<'lower-is-better' | 'higher-is-better' | null>(null);
+const standardType = ref<StandardType | null>(null);
+const evaluationType = ref<StandardEvaluationType | null>(null);
 
 const currentLevel = ref(-1);
 const levelNumbers = ref<number[]>([]);
-const levels = ref<Record<number, Level>>({});
+const levels = ref<Record<number, StandardFormLevel>>({});
 setLevelsWithZeroes();
-
-interface Level {
-  girls: LevelValues;
-  boys: LevelValues;
-}
-
-interface LevelValues {
-  high: number | null;
-  middle: number | null;
-  low: number | null;
-}
 
 const isNextLevelButtonDisabled = computed(() => {
   return !levelNumbers.value.some((value) => value > currentLevel.value);
@@ -125,25 +122,22 @@ async function createOrUpdateStandard() {
         .flat(),
     };
 
-    const currentId = pageType.value === 'update-standard' ? `${route.params.id}/` : '';
-    const currentMethod = pageType.value === 'update-standard' ? put : post;
-
-    const response = await currentMethod(`/api/standards/` + currentId, requestData);
-
-    if (response.ok && pageType.value === 'create-standard') {
+    if (pageType.value === 'create-standard') {
+      await standardsStore.createStandard(requestData);
       toast.success('Норматив успешно создан');
       standardName.value = '';
       standardType.value = null;
       levelNumbers.value = [];
       evaluationType.value = null;
       setLevelsWithZeroes();
-    } else if (response.ok && pageType.value === 'update-standard') {
-      toast.success('Данные о нормативе успешно обновлены');
     } else {
-      toast.error(getErrorMessage(await response.json()));
+      await standardsStore.updateStandard(+route.params.id, requestData);
+      toast.success('Данные о нормативе успешно обновлены');
     }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   } finally {
     isLoading.value = false;
   }
@@ -158,25 +152,32 @@ watch(levelNumbers, () => {
 
 onMounted(async () => {
   if (pageType.value === 'update-standard') {
-    const data: StandardResponse = await get(`/api/standards/${route.params.id}/`).then((res) =>
-      res.json(),
-    );
-    standardName.value = data.name;
-    standardType.value = data.has_numeric_value ? 'physical' : 'technical';
-    evaluationType.value = data.levels[0].is_lower_better ? 'lower-is-better' : 'higher-is-better';
+    try {
+      const data = await standardsStore.fetchStandard(+route.params.id);
+      standardName.value = data.name;
+      standardType.value = data.has_numeric_value ? 'physical' : 'technical';
+      evaluationType.value = data.levels[0].is_lower_better
+        ? 'lower-is-better'
+        : 'higher-is-better';
 
-    for (const level of data.levels) {
-      const key = level.gender === 'f' ? 'girls' : 'boys';
-      levels.value[level.level_number][key] = {
-        high: level.high_value,
-        middle: level.middle_value,
-        low: level.low_value,
-      };
-      if (!levelNumbers.value.includes(level.level_number))
-        levelNumbers.value.push(level.level_number);
+      for (const level of data.levels) {
+        const key = level.gender === 'f' ? 'girls' : 'boys';
+        levels.value[level.level_number][key] = {
+          high: level.high_value,
+          middle: level.middle_value,
+          low: level.low_value,
+        };
+        if (!levelNumbers.value.includes(level.level_number)) {
+          levelNumbers.value.push(level.level_number);
+        }
+      }
+
+      currentLevel.value = Math.min(...levelNumbers.value) ?? -1;
+    } catch (error) {
+      toast.error(
+        getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+      );
     }
-
-    currentLevel.value = Math.min(...levelNumbers.value) ?? -1;
   }
 });
 </script>

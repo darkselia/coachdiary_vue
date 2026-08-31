@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { Gender } from '@/types/types';
+import type { Gender } from '@/types/common';
 
-defineProps<{
+const { gender, high, middle, low } = defineProps<{
   gender: Gender;
   high: number | null;
   middle: number | null;
