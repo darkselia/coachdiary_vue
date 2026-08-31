@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import TopPanel from '@/components/TopPanel.vue';
-import FieldSet from '@/components/FieldSet.vue';
+import TopPanel from '@/components/shared/layout/TopPanel.vue';
+import FieldSet from '@/components/shared/ui/FieldSet.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import type {

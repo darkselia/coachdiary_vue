@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useDisplay } from 'vuetify';
-import { computed, ref, onMounted, nextTick } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useUIStore } from '@/stores/ui';

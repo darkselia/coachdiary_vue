@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BottomSheet from '@/components/BottomSheet.vue';
+import BottomSheet from '@/components/shared/ui/BottomSheet.vue';
 import { ref } from 'vue';
 
 defineProps<{

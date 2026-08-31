@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PageFooter from '@/components/PageFooter.vue';
+import PageFooter from '@/components/shared/layout/PageFooter.vue';
 import { API_BASE } from '@/api/http';
 
 const email = 'или в сообщения группы ВКонтакте';

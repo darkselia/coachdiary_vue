@@ -1,18 +1,18 @@
 import { createRouter, createWebHistory, type RouteLocationRaw } from 'vue-router';
 import { useUserStore } from '@/stores/user';
-import HomeView from '@/views/HomeView.vue';
-import LoginView from '@/views/LoginView.vue';
-import MyDiaryView from '@/views/MyDiaryView.vue';
-import MyStandardsView from '@/views/MyStandardsView.vue';
-import ProfileView from '@/views/ProfileView.vue';
-import CreateOrUpdateStandardView from '@/views/CreateOrUpdateStandardView.vue';
-import CreateOrUpdateStudentView from '@/views/CreateOrUpdateStudentView.vue';
-import StudentView from '@/views/StudentView.vue';
-import AboutSiteView from '@/views/AboutSiteView.vue';
-import AboutUsView from '@/views/AboutUsView.vue';
-import MyClassesView from '@/views/MyClassesView.vue';
-import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue';
-import InfoView from '@/views/InfoView.vue';
+import HomeView from '@/views/public/HomeView.vue';
+import LoginView from '@/views/auth/LoginView.vue';
+import MyDiaryView from '@/views/diary/MyDiaryView.vue';
+import MyStandardsView from '@/views/standards/MyStandardsView.vue';
+import ProfileView from '@/views/profile/ProfileView.vue';
+import CreateOrUpdateStandardView from '@/views/standards/CreateOrUpdateStandardView.vue';
+import CreateOrUpdateStudentView from '@/views/students/CreateOrUpdateStudentView.vue';
+import StudentView from '@/views/students/StudentView.vue';
+import AboutSiteView from '@/views/public/AboutSiteView.vue';
+import AboutUsView from '@/views/public/AboutUsView.vue';
+import MyClassesView from '@/views/classes/MyClassesView.vue';
+import PrivacyPolicyView from '@/views/public/PrivacyPolicyView.vue';
+import InfoView from '@/views/auth/InfoView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

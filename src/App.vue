@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { RouterView, useRoute } from 'vue-router';
-import AppBar from '@/components/AppBar.vue';
+import AppBar from '@/components/shared/layout/AppBar.vue';
 import { useUserStore } from '@/stores/user';
-import BottomAppBar from '@/components/BottomAppBar.vue';
+import BottomAppBar from '@/components/shared/layout/BottomAppBar.vue';
 import { useDisplay } from 'vuetify';
 import { computed } from 'vue';
 import { Toaster } from 'vue-sonner';
-import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import ConfirmDialog from '@/components/shared/ui/ConfirmDialog.vue';
 
 useUserStore().fetchProfile();
 

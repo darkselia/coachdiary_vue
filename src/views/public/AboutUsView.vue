@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import AboutSiteCart from '@/components/AboutSiteCard.vue';
-import PageFooter from '@/components/PageFooter.vue';
+import AboutSiteCart from '@/components/shared/content/AboutSiteCard.vue';
+import PageFooter from '@/components/shared/layout/PageFooter.vue';
 </script>
 
 <template>

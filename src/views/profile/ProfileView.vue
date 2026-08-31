@@ -1,9 +1,8 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { useProfileStore } from '@/stores/profile';
-import LoadingOverlay from '@/components/LoadingOverlay.vue';
-import FieldSet from '@/components/FieldSet.vue';
+import LoadingOverlay from '@/components/shared/ui/LoadingOverlay.vue';
+import FieldSet from '@/components/shared/ui/FieldSet.vue';
 import { useDisplay } from 'vuetify';
 import router from '@/router';
 import { toast } from 'vue-sonner';

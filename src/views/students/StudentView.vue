@@ -1,17 +1,10 @@
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
-import TopPanel from '@/components/TopPanel.vue';
-import LevelPanel from '@/components/LevelPanel.vue';
-import DataTableSideNav from '@/components/DataTableSideNav.vue';
-import StudentTable from '@/components/StudentTable.vue';
-import BottomSheetWithButton from '@/components/BottomSheetWithButton.vue';
-import { del, get, getErrorMessage, post, showConfirmDialog } from '@/utils';
-import type {
-  StudentResponse,
-  StudentStandard,
-  StudentStandardRequest,
-  StudentStandardResponse,
-} from '@/types/types';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import TopPanel from '@/components/shared/layout/TopPanel.vue';
+import LevelPanel from '@/components/shared/ui/LevelPanel.vue';
+import DataTableSideNav from '@/components/shared/ui/DataTableSideNav.vue';
+import StudentTable from '@/components/students/StudentTable.vue';
+import BottomSheetWithButton from '@/components/shared/ui/BottomSheetWithButton.vue';
 import { useRoute } from 'vue-router';
 import router from '@/router';
 import { toast } from 'vue-sonner';

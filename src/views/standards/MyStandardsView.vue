@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import StandardsTable from '@/components/StandardsTable.vue';
-import DataTableSideNav from '@/components/DataTableSideNav.vue';
-import TopPanel from '@/components/TopPanel.vue';
-import BottomSheetWithButton from '@/components/BottomSheetWithButton.vue';
+import StandardsTable from '@/components/standards/StandardsTable.vue';
+import DataTableSideNav from '@/components/shared/ui/DataTableSideNav.vue';
+import TopPanel from '@/components/shared/layout/TopPanel.vue';
+import BottomSheetWithButton from '@/components/shared/ui/BottomSheetWithButton.vue';
 
 import { computed, nextTick, onMounted, ref } from 'vue';
 import router from '@/router';

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import CapabilitiesCard from '@/components/CapabilitiesCard.vue';
-import PageFooter from '@/components/PageFooter.vue';
+import CapabilitiesCard from '@/components/shared/content/CapabilitiesCard.vue';
+import PageFooter from '@/components/shared/layout/PageFooter.vue';
 import { useDisplay } from 'vuetify';
 
 const { smAndDown } = useDisplay();

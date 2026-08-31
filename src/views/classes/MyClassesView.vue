@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import TopPanel from '@/components/TopPanel.vue';
-import ClassesPanel from '@/components/ClassesPanel.vue';
+import TopPanel from '@/components/shared/layout/TopPanel.vue';
+import ClassesPanel from '@/components/classes/ClassesPanel.vue';
 import { useDisplay } from 'vuetify';
-import { del, get, getErrorMessage, post, showConfirmDialog } from '@/utils';
-import router from '@/router';
+import MyClassesStudent from '@/components/students/MyClassesStudent.vue';
+import BottomSheetWithButton from '@/components/shared/ui/BottomSheetWithButton.vue';
+import LoadingOverlay from '@/components/shared/ui/LoadingOverlay.vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';

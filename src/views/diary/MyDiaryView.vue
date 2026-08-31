@@ -1,18 +1,14 @@
 <script lang="ts" setup>
-import TopPanel from '@/components/TopPanel.vue';
-import DataTableSideNav from '@/components/DataTableSideNav.vue';
-import MyDiaryTable from '@/components/MyDiaryTable.vue';
-import FilterBlock from '@/components/FilterBlock.vue';
-import ClassesPanel from '@/components/ClassesPanel.vue';
-import BottomSheetWithButton from '@/components/BottomSheetWithButton.vue';
-import type {
-  ClassRequest,
-  FilterData,
-  StandardResponse,
-  StudentResponse,
-  StudentsValueResponse,
-  StudentValueRequest,
-} from '@/types/types';
+import TopPanel from '@/components/shared/layout/TopPanel.vue';
+import DataTableSideNav from '@/components/shared/ui/DataTableSideNav.vue';
+import MyDiaryTable from '@/components/diary/MyDiaryTable.vue';
+import FilterBlock from '@/components/diary/FilterBlock.vue';
+import ClassesPanel from '@/components/classes/ClassesPanel.vue';
+import BottomSheetWithButton from '@/components/shared/ui/BottomSheetWithButton.vue';
+import type { StudentFilters, StudentValueResponse, StudentValueRequest } from '@/types/student';
+import type { DiaryPageType } from '@/types/ui';
+import type { StandardType } from '@/types/standard';
+import type { StudentResponse } from '@/types/student';
 
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { getErrorText } from '@/api/http';
@@ -58,13 +54,7 @@ const standardButtonText = computed(() => {
     if (selectedStandardIds.value.length <= 1) {
       return 'Выберите минимум 2 норматива';
     }
-    return 'Режим сравнения'; /*(
-      standards.value
-        .filter((v) => selectedStandardIds.value.includes(v.id))
-        .map((v) => v.label)
-        .sort((a, b) => a.localeCompare(b))
-        .join(', ') ?? 'Нормативы'
-    );*/
+    return 'Режим сравнения';
   }
 });
 const classButtonText = computed(() => {

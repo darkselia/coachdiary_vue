@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import TopPanel from '@/components/TopPanel.vue';
-import FieldSet from '@/components/FieldSet.vue';
+import TopPanel from '@/components/shared/layout/TopPanel.vue';
+import FieldSet from '@/components/shared/ui/FieldSet.vue';
 import { useRoute, useRouter } from 'vue-router';
 import { computed, onMounted, ref } from 'vue';
 import type { Gender, NullableGender } from '@/types/common';
@@ -60,7 +60,7 @@ async function createOrUpdateStudent() {
       birthdayDate.value = '';
     } else {
       await updateStudent(+route.params.id, requestData);
-      toast.success('Данные о ученике успешно обновлены');
+      toast.success('Данные об ученике успешно обновлены');
       router.push({ name: 'student', params: { id: route.params.id } });
     }
     classesStore.invalidateClasses();

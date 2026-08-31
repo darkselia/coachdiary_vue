@@ -23,10 +23,10 @@ import { RouterLink } from 'vue-router';
         <div class="header">Контакты</div>
         <div class="logo">
           <v-btn href="https://t.me/coach0diary" variant="text" target="_blank">
-            <img src="/public/telegram-svgrepo-com.svg" alt="Telegram" width="24" height="24" />
+            <img src="/telegram-svgrepo-com.svg" alt="Telegram" width="24" height="24" />
           </v-btn>
           <v-btn href="https://vk.com/coach0diary" variant="text" target="_blank">
-            <img src="/public/vk-1-logo-svgrepo-com.svg" alt="VK" width="24" height="24" />
+            <img src="/vk-1-logo-svgrepo-com.svg" alt="VK" width="24" height="24" />
           </v-btn>
         </div>
         <div>
