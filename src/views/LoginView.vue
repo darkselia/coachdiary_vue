@@ -1,12 +1,25 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { get, getErrorMessage, post } from '@/utils';
 import { toast } from 'vue-sonner';
-import PageFooter from '@/components/PageFooter.vue';
+import PageFooter from '@/components/shared/layout/PageFooter.vue';
 import { useUserStore } from '@/stores/user';
+import {
+  confirmPasswordReset,
+  getInvitation,
+  requestPasswordReset,
+  signIn as signInApi,
+  signUp as signUpApi,
+} from '@/api/auth';
+import { getErrorText } from '@/api/http';
+import type {
+  InvitationResponse,
+  LoginPageType,
+  RegistrationRequest,
+} from '@/types/auth';
+import type { PasswordFieldType } from '@/types/ui';
 
-const pageType = ref<'signIn' | 'signUp' | 'restore' | 'tokenSignUp' | 'reset-password'>('signIn');
+const pageType = ref<LoginPageType>('signIn');
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
@@ -19,11 +32,11 @@ const email = ref('');
 const password = ref('');
 const passwordConfirmation = ref('');
 
-const passwordType = ref<'password' | 'text'>('password');
-const passwordConfirmationType = ref<'password' | 'text'>('password');
+const passwordType = ref<PasswordFieldType>('password');
+const passwordConfirmationType = ref<PasswordFieldType>('password');
 
 const isLoading = ref(false);
-const invitationData = ref(null);
+const invitationData = ref<InvitationResponse | null>(null);
 const invitationToken = ref('');
 
 const resetPasswordToken = ref('');
@@ -96,42 +109,34 @@ async function sendData() {
   }
   isLoading.value = true;
   try {
-    let response;
     if (pageType.value === 'signIn') {
-      response = await signIn();
+      await signIn();
     } else if (pageType.value === 'signUp') {
-      response = await signUp();
+      await signUp();
     } else if (pageType.value === 'restore') {
-      response = await restore();
+      await restore();
     } else if (pageType.value === 'reset-password') {
-      response = await resetPassword();
+      await resetPassword();
     } else if (pageType.value === 'tokenSignUp') {
-      response = await studentSignUp();
+      await studentSignUp();
     }
-    if (response?.status === 'error' || response?.status === 'ошибка') {
-      toast.error(getErrorMessage(response));
-    }
-  } catch (e) {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   } finally {
     isLoading.value = false;
   }
 }
 
 async function signIn() {
-  const requestData = { email: email.value, password: password.value };
-  const response = await post('/api/login/', requestData);
-  if (response.ok) {
-    await userStore.login();
-    await router.push({ name: 'app' });
-  }
-  return response.json();
+  await signInApi({ email: email.value, password: password.value });
+  await userStore.login();
+  await router.push({ name: 'app' });
 }
 
 async function signUp() {
-  let url = '/api/create-user/';
-
-  const requestData = {
+  const requestData: RegistrationRequest = {
     email: email.value,
     password: password.value,
     confirm_password: passwordConfirmation.value,
@@ -141,57 +146,43 @@ async function signUp() {
     invite_code: '',
   };
 
-  if (invitationToken.value) {
-    url = `/api/create-user/from-invitation/`;
-    requestData.invite_code = invitationToken.value;
-  }
+  requestData.invite_code = invitationToken.value;
+  await signUpApi(requestData);
 
-  const response = await post(url, requestData);
-
-  if (response.ok) {
-    pageType.value = 'signIn';
-    email.value = '';
-    password.value = '';
-    firstName.value = '';
-    lastName.value = '';
-    patronymic.value = '';
-    passwordConfirmation.value = '';
-    invitationToken.value = '';
-    toast.success('Регистрация успешна. Проверьте вашу почту для подтверждения аккаунта.');
-  } else {
-    return response.json();
-  }
+  pageType.value = 'signIn';
+  email.value = '';
+  password.value = '';
+  firstName.value = '';
+  lastName.value = '';
+  patronymic.value = '';
+  passwordConfirmation.value = '';
+  invitationToken.value = '';
+  toast.success('Регистрация успешна. Проверьте вашу почту для подтверждения аккаунта.');
 }
 
 async function studentSignUp() {
   pageType.value = 'signUp';
 
-  const response = await get(`/api/create-user/from-invitation/${invitationToken.value}/`);
-  if (response.ok) {
-    const data = await response.json();
+  try {
+    const data = await getInvitation(invitationToken.value);
     invitationData.value = data;
     firstName.value = data.student.first_name;
     lastName.value = data.student.last_name;
     patronymic.value = data.student.patronymic;
-  } else {
-    const error = getErrorMessage(await response.json());
-    toast.error(error);
+  } catch (error) {
+    const errorText = getErrorText(error, 'Ошибка приглашения');
+    toast.error(errorText);
     invitationToken.value = '';
     pageType.value = 'signIn';
-    await router.push({ name: 'info', params: { error } });
+    await router.push({ name: 'info', params: { error: errorText } });
   }
-  return response.json();
 }
 
 async function restore() {
-  const requestData = { email: email.value };
-  const response = await post('/api/email/reset-password/request_reset/', requestData);
-  if (response.ok) {
-    toast.success('Письмо с инструкциями по восстановлению пароля отправлено на указанную почту');
-    pageType.value = 'signIn';
-    email.value = '';
-    return response.json();
-  }
+  await requestPasswordReset({ email: email.value });
+  toast.success('Письмо с инструкциями по восстановлению пароля отправлено на указанную почту');
+  pageType.value = 'signIn';
+  email.value = '';
 }
 
 async function resetPassword() {
@@ -200,18 +191,13 @@ async function resetPassword() {
     new_password: password.value,
     confirm_password: passwordConfirmation.value,
   };
-  const response = await post('/api/email/reset-password/confirm_reset/', requestData);
-  if (response.ok) {
-    toast.success('Пароль успешно изменен');
-    pageType.value = 'signIn';
-    passwordConfirmation.value = '';
-    password.value = '';
-    resetPasswordToken.value = '';
-    await router.push({ name: 'login' });
-    return response.json();
-  } else {
-    toast.error(getErrorMessage(await response.json()));
-  }
+  await confirmPasswordReset(requestData);
+  toast.success('Пароль успешно изменен');
+  pageType.value = 'signIn';
+  passwordConfirmation.value = '';
+  password.value = '';
+  resetPasswordToken.value = '';
+  await router.push({ name: 'login' });
 }
 
 onMounted(async () => {

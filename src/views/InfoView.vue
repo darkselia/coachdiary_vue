@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { get, getErrorMessage } from '@/utils';
+import { verifyEmail as verifyEmailApi } from '@/api/auth';
+import { getErrorText } from '@/api/http';
 
 const route = useRoute();
 const title = ref('');
@@ -13,15 +14,11 @@ let emailToken = '';
 async function verifyEmail() {
   try {
     loading.value = true;
-    const response = await get('/api/email/verify-email/' + emailToken + '/');
-    if (response.ok) {
-      success.value = true;
-      emailToken = '';
-    } else {
-      error.value = getErrorMessage(await response.json());
-    }
-  } catch (e) {
-    error.value = getErrorMessage(e);
+    await verifyEmailApi(emailToken);
+    success.value = true;
+    emailToken = '';
+  } catch (caughtError) {
+    error.value = getErrorText(caughtError, 'Не удалось подтвердить Email');
   } finally {
     loading.value = false;
   }
