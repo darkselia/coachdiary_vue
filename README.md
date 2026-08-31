@@ -5,12 +5,20 @@
 
 Этот проект — клиентская часть приложения **"Дневник тренера"**, разработанная с использованием **Vue.js** и **TypeScript**.
 
+Сайт доступен по адресу: [https://coachdiary.ru](https://coachdiary.ru)
+Тестовые аккаунты для входа в систему:
+- `user0@example.com`
+- `user1@example.com`
+- `user2@example.com`
+
+пароль: `password`
+
 ## 🛠️ Стек технологий
 
 - Vue.js 3
 - TypeScript
 - Vue Router
-- Pinia (для управления состоянием)
+- Pinia
 - Vue Composition API
 - CSS/SCSS
 
@@ -82,14 +90,39 @@ yarn build
 
 ```
 src/
-├── assets/         # Статические ресурсы
-├── components/     # Vue компоненты
-├── router/         # Настройки маршрутизации
-├── stores/         # Хранилища Pinia
-├── types/          # TypeScript типы
-├── utils/          # Вспомогательные функции
-└── views/          # Компоненты-страницы
+├── api/                         # Типизированные HTTP-запросы
+│   ├── auth.ts                  # Авторизация, регистрация и подтверждение email
+│   ├── classes.ts               # Операции с классами
+│   ├── http.ts                  # Общий HTTP-клиент и обработка ошибок
+│   ├── profile.ts               # Операции с профилем
+│   ├── standards.ts             # Операции с нормативами
+│   └── students.ts              # Операции с учениками и результатами
+├── assets/                      # Статические ресурсы и глобальные стили
+├── components/
+│   ├── classes/                 # Компоненты выбора классов
+│   ├── diary/                   # Таблица дневника и фильтры
+│   ├── standards/               # Таблицы нормативов
+│   ├── students/                # Компоненты учеников
+│   └── shared/
+│       ├── content/             # Общие информационные компоненты и логотип
+│       ├── layout/              # AppBar, TopPanel, PageFooter и layout
+│       └── ui/                  # Переиспользуемые UI-компоненты
+├── composables/
+│   └── utils.ts                 # Общие debounce, file и blob-утилиты
+├── router/                      # Настройки маршрутизации
+├── stores/                      # Pinia: кэш классов, нормативов, UI и пользователя
+├── types/                       # Типы по сущностям: auth, class, profile, standard, student
+└── views/
+    ├── auth/                   # LoginView и InfoView
+    ├── classes/                # MyClassesView
+    ├── diary/                 # MyDiaryView
+    ├── profile/               # ProfileView
+    ├── public/                # Главная и информационные страницы
+    ├── standards/             # Список и редактирование нормативов
+    └── students/              # Страница и форма ученика
 ```
+
+Страницы содержат состояние и сценарии конкретного экрана. Stores отвечают за общие данные и их кэш, `api` — только за запросы, а компоненты — за отображение и события.
 
 ## 🔨 Скрипты
 
