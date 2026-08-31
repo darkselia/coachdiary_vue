@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { confirmDialogs } from '@/utils';
 import { computed } from 'vue';
+import { useUIStore } from '@/stores/ui';
 
-const lastDialog = computed(() => confirmDialogs.value.at(-1));
+const uiStore = useUIStore();
+const lastDialog = computed(() => uiStore.confirmDialogs.at(-1));
 </script>
 
 <template>

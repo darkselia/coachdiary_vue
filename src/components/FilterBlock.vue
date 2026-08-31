@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import type { FilterData, GenderNullable } from '@/types/types';
+import type { StudentFilters } from '@/types/student';
+import type { NullableGender } from '@/types/common';
 
-const filterData = defineModel<FilterData>({ required: true });
+const filterData = defineModel<StudentFilters>({ required: true });
 
-defineProps<{
+const { mobile } = defineProps<{
   mobile?: boolean;
 }>();
 
@@ -11,7 +12,7 @@ const emit = defineEmits<{
   accept: [];
 }>();
 
-function selectGender(gender: GenderNullable): void {
+function selectGender(gender: NullableGender): void {
   if (filterData.value.gender === gender) {
     filterData.value.gender = null;
   } else {
