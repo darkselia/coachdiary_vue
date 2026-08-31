@@ -1,43 +1,96 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
-import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/stores/user';
 import { useProfileStore } from '@/stores/profile';
 import LoadingOverlay from '@/components/LoadingOverlay.vue';
 import FieldSet from '@/components/FieldSet.vue';
 import { useDisplay } from 'vuetify';
-import type { ProfilePageType } from '@/types/profile';
+import router from '@/router';
+import { toast } from 'vue-sonner';
+import {
+  changeProfileDetails,
+  changeProfileEmail,
+  changeProfilePassword,
+  exportProfileData,
+  exportProfileReport,
+  getProfile,
+  importProfileData,
+  resendProfileVerificationEmail,
+} from '@/api/profile';
+import { getErrorText } from '@/api/http';
+import type { ProfileExportType, ProfilePageType, ProfileResponse } from '@/types/profile';
+import { downloadBlob, selectFile } from '@/composables/utils';
+import type { PasswordFieldType } from '@/types/ui';
 
 const { smAndUp } = useDisplay();
 const userStore = useUserStore();
-const profileStore = useProfileStore();
-const {
-  isLoading,
-  isImporting,
-  isEmailVerified,
-  firstName,
-  lastName,
-  patronymic,
-  email,
-  password,
-  newPassword,
-  passwordConfirmation,
-  exportIncludesNorms,
-  exportIncludesResults,
-  exportIncludesStandards,
-  canUpdateName,
-  canUpdateEmail,
-  canUpdatePassword,
-  canExportReport,
-} = storeToRefs(profileStore);
-const { patchName, patchEmail, putPassword, exportData, importDataJSON, resendVerificationEmail } =
-  profileStore;
-
 const pageType = ref<ProfilePageType>('personal-info');
+const isLoading = ref(false);
+const isImporting = ref(false);
+const isEmailVerified = ref(true);
 
-const passwordType = ref<'password' | 'text'>('password');
-const newPasswordType = ref<'password' | 'text'>('password');
-const passwordConfirmationType = ref<'password' | 'text'>('password');
+const currentFirstName = ref('');
+const currentLastName = ref('');
+const currentPatronymic = ref('');
+const currentEmail = ref('');
+
+const firstName = ref('');
+const lastName = ref('');
+const patronymic = ref('');
+const email = ref('');
+const password = ref('');
+const newPassword = ref('');
+const passwordConfirmation = ref('');
+
+const passwordType = ref<PasswordFieldType>('password');
+const newPasswordType = ref<PasswordFieldType>('password');
+const passwordConfirmationType = ref<PasswordFieldType>('password');
+
+const exportIncludesNorms = ref(false);
+const exportIncludesResults = ref(false);
+const exportIncludesStandards = ref(false);
+
+const canUpdateName = computed(() => {
+  return (
+    !isLoading.value &&
+    firstName.value.trim().length > 0 &&
+    lastName.value.trim().length > 0 &&
+    (firstName.value.trim() !== currentFirstName.value ||
+      lastName.value.trim() !== currentLastName.value ||
+      patronymic.value.trim() !== currentPatronymic.value)
+  );
+});
+
+const canUpdateEmail = computed(() => {
+  return (
+    !isLoading.value && email.value.trim().length > 0 && email.value.trim() !== currentEmail.value
+  );
+});
+
+const canUpdatePassword = computed(() => {
+  return (
+    !isLoading.value &&
+    password.value.trim().length > 0 &&
+    newPassword.value.trim().length > 0 &&
+    newPassword.value.trim() === passwordConfirmation.value.trim()
+  );
+});
+
+const canExportReport = computed(() => {
+  return (
+    !isLoading.value &&
+    (exportIncludesNorms.value || exportIncludesResults.value || exportIncludesStandards.value)
+  );
+});
+
+const isTestTeacherAccount = computed(() => {
+  const testEmailPattern = /^user[0-2]@example\.com$/;
+  return (
+    testEmailPattern.test(currentEmail.value) &&
+    userStore.isTeacher &&
+    import.meta.env.VITE_DEBUG !== 'TRUE'
+  );
+});
 
 const navigationItems = computed(() => {
   if (userStore.isTeacher) {
@@ -53,8 +106,182 @@ const navigationItems = computed(() => {
   ];
 });
 
+async function loadProfile() {
+  try {
+    isLoading.value = true;
+    setProfile(await getProfile());
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function patchName() {
+  if (!canUpdateName.value) {
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    await changeProfileDetails({
+      first_name: firstName.value,
+      last_name: lastName.value,
+      patronymic: patronymic.value ?? '',
+    });
+    setProfile(await getProfile());
+    toast.success('Имя успешно изменено');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function patchEmail() {
+  if (!canUpdateEmail.value) {
+    return;
+  }
+
+  if (isTestTeacherAccount.value) {
+    toast.error(
+      'Это тестовый аккаунт, для проверки работоспособности приложения, на нем нельзя менять почту',
+    );
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    await changeProfileEmail({ email: email.value });
+    setProfile(await getProfile());
+    toast.success('Почта успешно изменена');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function putPassword() {
+  if (!canUpdatePassword.value) {
+    return;
+  }
+
+  if (isTestTeacherAccount.value) {
+    toast.error(
+      'Это тестовый аккаунт, для проверки работоспособности приложения, на нем нельзя менять пароль',
+    );
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    await changeProfilePassword({
+      new_password: newPassword.value,
+      confirm_new_password: passwordConfirmation.value,
+      current_password: password.value,
+    });
+    password.value = '';
+    newPassword.value = '';
+    passwordConfirmation.value = '';
+    toast.success('Пароль успешно изменен');
+    userStore.clearLocalStorage();
+    await router.push({ name: 'login' });
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function exportData(type: ProfileExportType) {
+  if (type === 'xlsx' && !canExportReport.value) {
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+
+    if (type === 'json') {
+      const data = await exportProfileData();
+      downloadBlob(
+        new Blob([JSON.stringify(data)], { type: 'application/json' }),
+        'coachdiary-data.json',
+      );
+      return;
+    }
+
+    const blob = await exportProfileReport({
+      include_norms: exportIncludesNorms.value,
+      include_results: exportIncludesResults.value,
+      include_standards: exportIncludesStandards.value,
+    });
+    downloadBlob(blob, getReportFilename());
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время экспорта данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function importDataJSON() {
+  const file = await selectFile('.json');
+  if (!file) return;
+
+  try {
+    isImporting.value = true;
+    const data = await importProfileData(file);
+    toast.success(data.message);
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время импорта данных, попробуйте еще раз'),
+    );
+  } finally {
+    isImporting.value = false;
+  }
+}
+
+async function resendVerificationEmail() {
+  try {
+    await resendProfileVerificationEmail();
+    toast.success('Письмо для подтверждения отправлено на вашу почту');
+  } catch (error) {
+    toast.error(getErrorText(error, 'Не удалось отправить письмо, попробуйте позже'));
+  }
+}
+
+function setProfile(data: ProfileResponse) {
+  currentFirstName.value = data.first_name;
+  currentLastName.value = data.last_name;
+  currentPatronymic.value = data.patronymic;
+  currentEmail.value = data.email;
+  firstName.value = currentFirstName.value;
+  lastName.value = currentLastName.value;
+  patronymic.value = currentPatronymic.value;
+  email.value = currentEmail.value;
+  isEmailVerified.value = data.is_email_verified;
+}
+
+function getReportFilename() {
+  let filename = 'coachdiary-data';
+  if (exportIncludesNorms.value) filename += '-все-нормативы';
+  if (exportIncludesResults.value) filename += '-результаты';
+  if (exportIncludesStandards.value) filename += '-листы-нормативов';
+  return `${filename}.xlsx`;
+}
+
 onMounted(async () => {
-  await profileStore.loadProfile();
+  await loadProfile();
 });
 </script>
 

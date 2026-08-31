@@ -1,3 +1,5 @@
+import type { UserRole } from '@/types/user';
+
 export type ProfilePageType = 'personal-info' | 'security' | 'data-reports';
 
 export type ProfileResponse = {
@@ -7,6 +9,7 @@ export type ProfileResponse = {
   patronymic: string;
   email: string;
   is_email_verified: boolean;
+  role: Exclude<UserRole, 'guest'>;
 };
 
 export type ChangeProfileDetailsRequest = {
@@ -36,3 +39,5 @@ export type ProfileExportType = 'xlsx' | 'json';
 export type ImportProfileDataResponse = {
   message: string;
 };
+
+export type ProfileExportData = Record<string, unknown>;

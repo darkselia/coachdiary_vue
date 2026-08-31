@@ -5,6 +5,7 @@ import type {
   ChangeProfilePasswordRequest,
   ExportReportParams,
   ImportProfileDataResponse,
+  ProfileExportData,
   ProfileResponse,
 } from '@/types/profile';
 
@@ -24,8 +25,8 @@ export function changeProfilePassword(data: ChangeProfilePasswordRequest): Promi
   return apiPatch('/api/profile/change_password/', data);
 }
 
-export function exportProfileData(): Promise<unknown> {
-  return apiGet('/api/profile/export_data/');
+export function exportProfileData(): Promise<ProfileExportData> {
+  return apiGet<ProfileExportData>('/api/profile/export_data/');
 }
 
 export function exportProfileReport(params: ExportReportParams): Promise<Blob> {
