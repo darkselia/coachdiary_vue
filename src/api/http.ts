@@ -77,6 +77,14 @@ export async function apiBlob(url: string, params?: QueryParams): Promise<Blob> 
   return response.blob();
 }
 
+export function getErrorText(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 async function apiRequest<T>(
   url: string,
   method: string,
