@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { StudentStandard } from '@/types/types';
+import type { StudentStandard, StudentStandardChange } from '@/types/student';
 import { ref } from 'vue';
-
-type StudentStandardValue = { standard_id: number; level_number: number; value: number | null };
 
 const {
   standards,
@@ -17,7 +15,7 @@ const {
 }>();
 
 const emit = defineEmits<{
-  saveData: [changedData: StudentStandardValue[]];
+  saveData: [changedData: StudentStandardChange[]];
 }>();
 
 const headers = [
@@ -26,7 +24,7 @@ const headers = [
   { title: 'Оценка', value: 'grade', sortable: true, width: 80 },
 ];
 
-const changedValues = ref<StudentStandardValue[]>([]);
+const changedValues = ref<StudentStandardChange[]>([]);
 
 function getMarkColor(mark: number): string {
   if (mark <= 1) {
@@ -109,6 +107,7 @@ function saveData() {
         type="number"
         class="mark"
         max="5"
+        min="1"
         :disabled="isLoading"
         :rules="[validateValueByStandardType]"
         :readonly="readonlyInput"

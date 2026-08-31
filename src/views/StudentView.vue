@@ -18,6 +18,19 @@ import { toast } from 'vue-sonner';
 import { useDisplay } from 'vuetify';
 import { useUIStore } from '@/stores/ui';
 import { useUserStore } from '@/stores/user';
+import {
+  deleteStudentById,
+  getStudent,
+  getStudentStandards,
+  saveStudentResults,
+} from '@/api/students';
+import type {
+  StudentStandardChange,
+  StudentResponse,
+  StudentStandardRequest,
+  StudentStandardsResponse,
+} from '@/types/student';
+import { getErrorText } from '@/api/http';
 
 const route = useRoute();
 const uiStore = useUIStore();
@@ -25,20 +38,24 @@ const userStore = useUserStore();
 const { smAndUp } = useDisplay();
 const isLoading = ref(false);
 const studentId = computed(() => +route.params.id);
-const studentInfo = ref<StudentResponse>();
-const standards = ref<StudentStandard[]>([]);
-const standardsInfo = ref<StudentStandardResponse>({
+const studentInfo = ref<StudentResponse | null>(null);
+const standardsInfo = ref<StudentStandardsResponse>({
   summary_grade: -1,
   standards: [],
 });
 const selectedLevelNumber = ref(-1);
+
 const fullName = computed(() => {
   if (!studentInfo.value) return '';
   return `${studentInfo.value.last_name} ${studentInfo.value.first_name} ${studentInfo.value.patronymic}`;
 });
 
+const standards = computed(() =>
+  standardsInfo.value.standards.toSorted((a, b) => a.standard.name.localeCompare(b.standard.name)),
+);
+
 const levelButtonText = computed(() =>
-  selectedLevelNumber.value != -1 ? selectedLevelNumber.value + ' год обучения' : 'Года обучения',
+  selectedLevelNumber.value !== -1 ? `${selectedLevelNumber.value} год обучения` : 'Года обучения',
 );
 
 const labels = computed(() => {
@@ -50,7 +67,7 @@ const labels = computed(() => {
     },
     {
       id: 1,
-      label: `Класс: ${studentInfo.value.student_class.number}${studentInfo.value?.student_class.class_name}`,
+      label: `Класс: ${studentInfo.value.student_class.number}${studentInfo.value.student_class.class_name}`,
     },
     {
       id: 2,
@@ -67,92 +84,87 @@ const labels = computed(() => {
   ];
 });
 
-async function getStudentById(studentId: number) {
-  try {
-    const response = await get(`/api/students/${studentId}`);
-    if (response.ok) {
-      studentInfo.value = await response.json();
-      uiStore.mobileTitle = studentInfo.value ? fullName.value : 'Студент не найден';
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время получения данных, попробуйте еще раз');
-  }
-}
-
-async function getStandardsByStudentId(studentId: number) {
-  try {
-    const response = await get(`/api/students/${studentId}/standards/`, {
-      level_number: selectedLevelNumber.value,
-    });
-    if (response.ok) {
-      standardsInfo.value = await response.json();
-      standards.value = standardsInfo.value.standards.sort((a, b) =>
-        a.standard.name.localeCompare(b.standard.name),
-      );
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время получения данных, попробуйте еще раз');
-  }
-}
-
 function editStudent(): void {
   router.push({ name: 'update-student', params: { id: studentId.value } });
 }
 
-async function deleteStudent() {
-  await showConfirmDialog({
-    title: 'Удаление ученика',
-    text: 'Вы уверены, что хотите удалить этого ученика?',
-  });
-
-  try {
-    const response = await del('/api/students/' + studentId.value + '/');
-    if (response.ok) {
-      await router.push({ name: 'my-diary' });
-      toast.success('Ученик успешно удален');
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
-  }
-}
-
-async function saveStudentValue(
-  changedValues: { standard_id: number; level_number: number; value: number | null }[],
-) {
+async function loadStudentPage() {
   try {
     isLoading.value = true;
-    const request: StudentStandardRequest[] = changedValues.map((v) => ({
-      student_id: studentId.value,
-      standard_id: v.standard_id,
-      value: v.value,
-      level_number: v.level_number,
-    }));
-
-    const response = await post('/api/students/results/create/', request);
-    if (response.ok) {
-      await getStandardsByStudentId(studentId.value);
-      toast.success('Данные успешно обновлены');
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+    studentInfo.value = await getStudent(studentId.value);
+    selectedLevelNumber.value = studentInfo.value.student_class.number;
+    await fetchStandards();
+    uiStore.mobileTitle = fullName.value || 'Студент не найден';
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
   } finally {
     isLoading.value = false;
   }
 }
 
+async function loadStandards() {
+  try {
+    isLoading.value = true;
+    await fetchStandards();
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function deleteStudent() {
+  await uiStore.showConfirmDialog({
+    title: 'Удаление ученика',
+    text: 'Вы уверены, что хотите удалить этого ученика?',
+  });
+
+  try {
+    isLoading.value = true;
+    await deleteStudentById(studentId.value);
+    await router.push({ name: 'my-diary' });
+    toast.success('Ученик успешно удален');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function saveStudentValue(changedValues: StudentStandardChange[]) {
+  try {
+    isLoading.value = true;
+    const request: StudentStandardRequest[] = changedValues.map((value) => ({
+      student_id: studentId.value,
+      standard_id: value.standard_id,
+      value: value.value,
+      level_number: value.level_number,
+    }));
+
+    await saveStudentResults(request);
+    await fetchStandards();
+    toast.success('Данные успешно обновлены');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function fetchStandards() {
+  standardsInfo.value = await getStudentStandards(studentId.value, selectedLevelNumber.value);
+}
+
 onMounted(async () => {
-  await getStudentById(studentId.value);
-  await nextTick();
-  selectedLevelNumber.value = studentInfo?.value?.student_class.number ?? 0;
-  await getStandardsByStudentId(studentId.value);
+  await loadStudentPage();
 });
 
 onUnmounted(() => {
@@ -161,7 +173,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <TopPanel v-if="smAndUp" class="top-panel">
+  <TopPanel v-if="smAndUp" :is-loading class="top-panel">
     <div class="top-panel-title">{{ fullName ?? 'Студент не найден' }}</div>
   </TopPanel>
 
@@ -176,7 +188,7 @@ onUnmounted(() => {
           color="secondary"
           @update:model-value="
             toggle();
-            getStandardsByStudentId(studentId);
+            loadStandards();
           "
         />
       </template>
@@ -202,7 +214,7 @@ onUnmounted(() => {
       v-model="selectedLevelNumber"
       :class-number="studentInfo?.student_class.number ?? 0"
       class="level-panel"
-      @update:model-value="getStandardsByStudentId(studentId)"
+      @update:model-value="loadStandards"
     />
 
     <div class="grid">

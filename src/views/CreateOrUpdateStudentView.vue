@@ -3,19 +3,23 @@ import TopPanel from '@/components/TopPanel.vue';
 import FieldSet from '@/components/FieldSet.vue';
 import { useRoute, useRouter } from 'vue-router';
 import { computed, onMounted, ref } from 'vue';
-import { get, getErrorMessage, post, put } from '@/utils';
-import type { Gender, GenderNullable, StudentRequest, StudentResponse } from '@/types/types';
+import type { Gender, NullableGender } from '@/types/common';
+import type { StudentFormPageType, StudentRequest } from '@/types/student';
 import { toast } from 'vue-sonner';
+import { createStudent, getStudent, updateStudent } from '@/api/students';
+import { getErrorText } from '@/api/http';
+import { useClassesStore } from '@/stores/classes';
 
 const route = useRoute();
 const router = useRouter();
-const pageType = ref(route.name as 'create-student' | 'update-student');
+const classesStore = useClassesStore();
+const pageType = ref<StudentFormPageType>(route.name as StudentFormPageType);
 const isLoading = ref(false);
 
 const firstName = ref('');
 const lastName = ref('');
 const patronymic = ref('');
-const genderType = ref<GenderNullable>(null);
+const genderType = ref<NullableGender>(null);
 const birthdayDate = ref(''); //2024-05-08
 const classNumber = ref(-1);
 const className = ref('');
@@ -46,26 +50,24 @@ async function createOrUpdateStudent() {
       birthday: birthdayDate.value,
       gender: genderType.value as Gender,
     };
-    const currentId = pageType.value === 'update-student' ? `${route.params.id}/` : '';
-    const currentMethod = pageType.value === 'update-student' ? put : post;
-
-    const response = await currentMethod(`/api/students/` + currentId, requestData);
-
-    if (response.ok && pageType.value === 'create-student') {
+    if (pageType.value === 'create-student') {
+      await createStudent(requestData);
       toast.success('Ученик успешно создан');
       firstName.value = '';
       lastName.value = '';
       patronymic.value = '';
       genderType.value = null;
       birthdayDate.value = '';
-    } else if (response.ok && pageType.value == 'update-student') {
+    } else {
+      await updateStudent(+route.params.id, requestData);
       toast.success('Данные о ученике успешно обновлены');
       router.push({ name: 'student', params: { id: route.params.id } });
-    } else {
-      toast.error(getErrorMessage(await response.json()));
     }
-  } catch (e) {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+    classesStore.invalidateClasses();
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   } finally {
     isLoading.value = false;
   }
@@ -73,16 +75,20 @@ async function createOrUpdateStudent() {
 
 onMounted(async () => {
   if (pageType.value === 'update-student') {
-    const data: StudentResponse = await get(`/api/students/${route.params.id}/`).then((res) =>
-      res.json(),
-    );
-    firstName.value = data.first_name;
-    lastName.value = data.last_name;
-    patronymic.value = data.patronymic;
-    genderType.value = data.gender;
-    birthdayDate.value = data.birthday;
-    classNumber.value = data.student_class.number;
-    className.value = data.student_class.class_name;
+    try {
+      const data = await getStudent(+route.params.id);
+      firstName.value = data.first_name;
+      lastName.value = data.last_name;
+      patronymic.value = data.patronymic;
+      genderType.value = data.gender;
+      birthdayDate.value = data.birthday;
+      classNumber.value = data.student_class.number;
+      className.value = data.student_class.class_name;
+    } catch (error) {
+      toast.error(
+        getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+      );
+    }
   }
 });
 </script>
