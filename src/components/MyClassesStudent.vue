@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { StudentResponse } from '@/types/types';
+import type { StudentResponse } from '@/types/student';
 import { computed, ref } from 'vue';
 
 const { student } = defineProps<{

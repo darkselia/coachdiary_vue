@@ -1,39 +1,30 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import type { ClassRequest, StudentResponse } from '@/types/types';
-import { useRoute, useRouter } from 'vue-router';
-import { get, getErrorMessage } from '@/utils';
-import { toast } from 'vue-sonner';
+import { computed } from 'vue';
+import type { ClassResponse } from '@/types/class';
 
-defineProps<{
+const {
+  classesData,
+  directionColumn,
+  menu,
+  selectedLetter = '',
+} = defineProps<{
+  classesData: ClassResponse[];
   directionColumn?: boolean;
   menu?: boolean;
+  selectedLetter?: string;
 }>();
 
 const emit = defineEmits<{
-  studentsData: [students: StudentResponse[], classNumber: number, letter: string];
-  classesData: [classes: ClassRequest[]];
-  buttonClick: [];
+  select: [classNumber: number, letter: string];
 }>();
-
-const route = useRoute();
-
-const router = useRouter();
-const classesData = ref<ClassRequest[]>([]);
 
 const activeLevelNumber = defineModel<number>({
   default: -1,
   required: false,
 });
 
-const className = ref((route.query.letter as string) || '');
-
-const fullClassName = computed(() =>
-  className.value ? activeLevelNumber.value + className.value : activeLevelNumber.value,
-);
-
 const classes = computed(() =>
-  classesData.value.reduce(
+  classesData.reduce(
     (acc, v) => {
       if (!(v.number in acc)) {
         acc[v.number] = [] as string[];
@@ -46,62 +37,10 @@ const classes = computed(() =>
   ),
 );
 
-async function getStudentsData(classNumber: number, letter: string, emitButtonClick = false) {
+function selectClass(classNumber: number, letter: string) {
   activeLevelNumber.value = classNumber;
-  className.value = letter;
-
-  if (route.name === 'my-diary') {
-    await router.replace({
-      query: {
-        ...route.query,
-        classNumber: classNumber,
-        letter: letter,
-      },
-    });
-  } else if (route.name === 'my-classes') {
-    await router.replace({
-      query: {
-        classNumber: classNumber,
-        letter: letter,
-      },
-    });
-  }
-
-  if (emitButtonClick) {
-    emit('buttonClick');
-  }
-
-  try {
-    let response;
-    if (classNumber == 12) {
-      response = await get(`/api/students/`);
-    } else {
-      response = await get(`/api/students/`, {
-        student_class: fullClassName.value,
-      });
-    }
-    if (response.ok) {
-      const currentStudents = (await response.json()) as StudentResponse[];
-      emit('studentsData', currentStudents, classNumber, letter);
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время получения данных, попробуйте еще раз');
-  }
+  emit('select', classNumber, letter);
 }
-
-onMounted(async () => {
-  if (route.query.classNumber) {
-    activeLevelNumber.value = +route.query.classNumber;
-  }
-  classesData.value = await get('/api/classes/').then((res) => res.json());
-
-  emit('classesData', classesData.value);
-  if (activeLevelNumber.value !== -1) {
-    await getStudentsData(activeLevelNumber.value, className.value);
-  }
-});
 </script>
 
 <template>
@@ -113,9 +52,9 @@ onMounted(async () => {
       :variant="activeLevelNumber === n ? 'flat' : 'outlined'"
       class="level-button top-button"
       color="rgb(var(--v-theme-secondary))"
-      @click="!menu ? getStudentsData(n, '', true) : ''"
+      @click="!menu ? selectClass(n, '') : ''"
     >
-      {{ n }}{{ activeLevelNumber === n ? className : '' }}
+      {{ n }}{{ activeLevelNumber === n ? selectedLetter : '' }}
       <v-menu
         v-if="menu"
         activator="parent"
@@ -129,15 +68,11 @@ onMounted(async () => {
             :key="n + letter"
             variant="text"
             color="secondary"
-            @click="getStudentsData(n, letter, true)"
+            @click="selectClass(n, letter)"
           >
             {{ letter.toUpperCase() }}
           </v-btn>
-          <v-btn
-            variant="text"
-            color="rgb(var(--v-theme-secondary))"
-            @click="getStudentsData(n, '', true)"
-          >
+          <v-btn variant="text" color="rgb(var(--v-theme-secondary))" @click="selectClass(n, '')">
             Параллель
           </v-btn>
         </div>
@@ -162,7 +97,7 @@ onMounted(async () => {
       :variant="activeLevelNumber === 12 ? 'flat' : 'outlined'"
       class="level-button top-button"
       color="rgb(var(--v-theme-secondary))"
-      @click="getStudentsData(12, '', true)"
+      @click="selectClass(12, '')"
     >
       все
     </v-btn>

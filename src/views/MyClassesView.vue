@@ -1,25 +1,32 @@
 <script setup lang="ts">
 import TopPanel from '@/components/TopPanel.vue';
 import ClassesPanel from '@/components/ClassesPanel.vue';
-import { computed, onMounted, ref } from 'vue';
-import type { ClassRequest, StudentResponse } from '@/types/types';
-import { useMyClassesStore } from '@/stores/myClasses';
 import { useDisplay } from 'vuetify';
 import { del, get, getErrorMessage, post, showConfirmDialog } from '@/utils';
 import router from '@/router';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
-import MyClassesStudent from '@/components/MyClassesStudent.vue';
-import BottomSheetWithButton from '@/components/BottomSheetWithButton.vue';
-import LoadingOverlay from '@/components/LoadingOverlay.vue';
+import { getClassQRCodesPdf, getStudents } from '@/api/students';
+import { getErrorText } from '@/api/http';
+import { useClassesStore } from '@/stores/classes';
+import { useUIStore } from '@/stores/ui';
+import type { StudentResponse } from '@/types/student';
+import { openBlob, useDebounce } from '@/composables/utils';
 
 const { smAndUp } = useDisplay();
-const myClassesStore = useMyClassesStore();
-const activeLevelNumber = ref(-1);
+const route = useRoute();
+const router = useRouter();
+const classesStore = useClassesStore();
+const uiStore = useUIStore();
+
+const activeLevelNumber = ref(+(route.query.classNumber ?? -1));
+const activeClassName = ref((route.query.letter as string) || '');
+const activeClasses = ref<string[]>([]);
+const search = ref((route.query.search as string) || '');
 const studentsData = ref<StudentResponse[]>([]);
-const classesData = ref<ClassRequest[]>([]);
 const isLoading = ref(false);
 const loadingText = ref('Загрузка классов и учеников...');
-let timer: number | null = null;
 
 const groupedStudentsClasses = computed(() => {
   const students = studentsData.value.toSorted((a, b) => {
@@ -29,121 +36,118 @@ const groupedStudentsClasses = computed(() => {
     if (a.student_class.class_name !== b.student_class.class_name) {
       return a.student_class.class_name.localeCompare(b.student_class.class_name);
     }
-    let fullNameA = `${a.last_name} ${a.first_name} ${a.patronymic}`;
-    let fullNameB = `${b.last_name} ${b.first_name} ${b.patronymic}`;
-    return fullNameA.localeCompare(fullNameB);
+    return a.full_name.localeCompare(b.full_name);
   });
   const result: Record<number, Record<string, StudentResponse[]>> = {};
+
   for (const student of students) {
-    if (!result[student.student_class.number]) {
-      result[student.student_class.number] = {};
-    }
-    if (!result[student.student_class.number][student.student_class.class_name]) {
-      result[student.student_class.number][student.student_class.class_name] = [];
-    }
-    result[student.student_class.number][student.student_class.class_name].push(student);
+    const levelNumber = student.student_class.number;
+    const className = student.student_class.class_name;
+    result[levelNumber] ??= {};
+    result[levelNumber][className] ??= [];
+    result[levelNumber][className].push(student);
   }
 
   return result;
 });
 
-function updateStudentsData(data: StudentResponse[], classNumber: number, letter: string) {
-  studentsData.value = data;
+async function selectClass(classNumber: number, letter: string) {
   activeLevelNumber.value = classNumber;
-  myClassesStore.search = '';
-}
+  activeClassName.value = letter;
+  activeClasses.value = [];
+  search.value = '';
 
-function getClassesData(data: ClassRequest[]) {
-  classesData.value = data;
-}
+  await router.replace({ query: { classNumber, letter } });
 
-async function search(searchValue: string) {
-  if (timer) {
-    clearTimeout(timer);
+  try {
+    studentsData.value =
+      classNumber === 12
+        ? await getStudents()
+        : await getStudents({ student_class: classNumber + letter });
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
   }
+}
 
+async function runSearch(searchValue: string) {
+  try {
+    activeLevelNumber.value = -1;
+    activeClassName.value = '';
+    search.value = searchValue;
+    await router.replace({ query: { search: searchValue } });
+    studentsData.value = await getStudents({ full_name: searchValue });
+    activeClasses.value = Object.entries(groupedStudentsClasses.value).flatMap(
+      ([levelNumber, classes]) => Object.keys(classes).map((className) => levelNumber + className),
+    );
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
+  }
+}
+
+const searchStudentsDebounced = useDebounce(runSearch);
+
+function searchStudents(searchValue: string) {
   if (searchValue.length === 0 && activeLevelNumber.value === -1) {
     studentsData.value = [];
   }
   if (searchValue.length < 2) {
+    searchStudentsDebounced.cancel();
     return;
   }
 
-  timer = setTimeout(async () => {
-    try {
-      activeLevelNumber.value = -1;
-      myClassesStore.search = searchValue;
-      await myClassesStore.setQuery('search');
-      let response = await get(`/api/students/`, { full_name: searchValue });
-      if (response.ok) {
-        studentsData.value = (await response.json()) as StudentResponse[];
-        setTimeout(() => {
-          myClassesStore.activeClasses = Object.entries(groupedStudentsClasses.value).flatMap(
-            ([levelNumber, classes]) =>
-              Object.keys(classes).map((className) => levelNumber + className),
-          );
-        }, 0);
-      } else {
-        toast.error(getErrorMessage(await response.json()));
-      }
-    } catch (e) {
-      toast.error('Произошла ошибка во время получения данных, попробуйте еще раз');
-    }
-  }, 400);
+  searchStudentsDebounced(searchValue);
 }
 
-async function getPDFQRCodes(number: number, name: string) {
-  const id = classesData.value.find(
-    (item) => item.number === number && item.class_name === name,
-  )?.id;
+async function downloadClassQrCodes(number: number, name: string) {
+  const id = classesStore.getClassIdByNumberAndName(number, name);
+  if (id === undefined) {
+    toast.error('Класс не найден');
+    return;
+  }
+
   try {
     isLoading.value = true;
     loadingText.value = 'генерация QR-кодов';
-    const response = await get(`/api/students/generate_qr_codes_pdf/`, {
-      class_id: id,
-    });
-    if (response.ok) {
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      window.URL.revokeObjectURL(url);
-
-      toast.success('QR-коды успешно скачаны');
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+    openBlob(await getClassQRCodesPdf(id));
+    toast.success('QR-коды успешно скачаны');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   } finally {
     isLoading.value = false;
   }
 }
 
-async function deleteClass(number: number, name: string) {
-  await showConfirmDialog({
+async function removeClass(number: number, name: string) {
+  await uiStore.showConfirmDialog({
     title: 'Удаление класса',
     text: 'Вы уверены, что хотите удалить весь класс?',
   });
 
-  const id = classesData.value.find(
-    (item) => item.number === number && item.class_name === name,
-  )?.id;
+  const id = classesStore.getClassIdByNumberAndName(number, name);
+  if (id === undefined) {
+    toast.error('Класс не найден');
+    return;
+  }
 
   try {
-    const response = await del(`/api/classes/${id}/`);
-    if (response.ok) {
-      router.go(0);
-      toast.success('Класс успешно удален');
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+    await classesStore.deleteClass(id);
+    router.go(0);
+    toast.success('Класс успешно удален');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   }
 }
 
 async function transferToNextYear() {
-  await showConfirmDialog({
+  await uiStore.showConfirmDialog({
     title: 'Перевод на следующий год',
     text: 'Это действие переведет все классы на следующий год (сохраняя букву) и удаляет выпущенные 11 классы. Вы уверены, что хотите сделать перевод?',
   });
@@ -151,29 +155,38 @@ async function transferToNextYear() {
   try {
     isLoading.value = true;
     loadingText.value = 'перевод классов на следующий год';
-    const response = await post('/api/classes/promote/');
-    if (response.ok) {
-      router.go(0);
-      toast.success('Все классы успешно переведены на следующий год');
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Произошла ошибка во время отправки данных, попробуйте еще раз');
+    await classesStore.promoteClasses();
+    router.go(0);
+    toast.success('Все классы успешно переведены на следующий год');
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время отправки данных, попробуйте еще раз'),
+    );
   } finally {
     isLoading.value = false;
   }
 }
 
 onMounted(async () => {
-  if (myClassesStore.search) {
-    await search(myClassesStore.search);
+  try {
+    await classesStore.fetchClasses();
+    if (search.value) {
+      searchStudents(search.value);
+    } else if (activeLevelNumber.value !== -1) {
+      await selectClass(activeLevelNumber.value, activeClassName.value);
+    }
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
   }
 });
+
+onUnmounted(searchStudentsDebounced.cancel);
 </script>
 
 <template>
-  <TopPanel class="top-panel">
+  <TopPanel class="top-panel" :is-loading>
     <BottomSheetWithButton
       v-if="!smAndUp"
       button-text="Классы"
@@ -184,10 +197,13 @@ onMounted(async () => {
       <template #default="{ toggle }">
         <ClassesPanel
           v-model="activeLevelNumber"
-          @studentsData="updateStudentsData"
-          @buttonClick="
-            toggle();
-            myClassesStore.activeClasses = [];
+          :classes-data="classesStore.classes"
+          :selected-letter="activeClassName"
+          @select="
+            (classNumber, letter) => {
+              selectClass(classNumber, letter);
+              toggle();
+            }
           "
         />
         <v-btn
@@ -201,7 +217,7 @@ onMounted(async () => {
       </template>
     </BottomSheetWithButton>
     <v-combobox
-      v-model="myClassesStore.search"
+      v-model="search"
       :items="studentsData.map((v) => v.full_name)"
       density="compact"
       class="search"
@@ -212,7 +228,7 @@ onMounted(async () => {
       clearable
       rounded
       hide-details
-      @update:search="search"
+      @update:search="searchStudents"
     />
     <template #left v-if="smAndUp">
       <v-btn
@@ -236,17 +252,17 @@ onMounted(async () => {
   <div class="classes-panel" v-if="smAndUp">
     <ClassesPanel
       v-model="activeLevelNumber"
+      :classes-data="classesStore.classes"
       direction-column
-      @studentsData="updateStudentsData"
-      @classesData="getClassesData"
-      @buttonClick="myClassesStore.activeClasses = []"
+      :selected-letter="activeClassName"
+      @select="selectClass"
     />
   </div>
 
   <div class="container">
     <div class="students-container">
       <template v-for="(levelClasses, levelNumber) in groupedStudentsClasses" :key="levelNumber">
-        <v-expansion-panels v-model="myClassesStore.activeClasses" multiple>
+        <v-expansion-panels v-model="activeClasses" multiple>
           <v-expansion-panel
             v-for="(students, className) in levelClasses"
             :key="levelNumber + className"
@@ -274,14 +290,14 @@ onMounted(async () => {
                   color="info"
                   variant="outlined"
                   text="Скачать qr коды приглашений"
-                  @click="getPDFQRCodes(+levelNumber, className)"
+                  @click="downloadClassQrCodes(+levelNumber, className)"
                 />
                 <v-btn
                   size="small"
                   color="error"
                   variant="outlined"
                   text="Удалить"
-                  @click="deleteClass(+levelNumber, className)"
+                  @click="removeClass(+levelNumber, className)"
                 />
                 <!--    <v-btn size="small" color="warning" variant="outlined">Архивировать</v-btn>
                         <v-btn size="small" color="info" variant="outlined">Перевести на след. год</v-btn>-->
