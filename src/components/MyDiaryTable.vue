@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { VDataTable } from 'vuetify/components';
-import type { StudentsValueResponse, StudentValueRequest } from '@/types/types';
+import type { StudentValueRequest, StudentValueResponse } from '@/types/student';
 import { computed, ref } from 'vue';
 import { useDisplay } from 'vuetify';
 import { toast } from 'vue-sonner';
@@ -11,7 +11,7 @@ const {
   pageType = 'single',
   isLoading = false,
 } = defineProps<{
-  data: StudentsValueResponse[];
+  data: StudentValueResponse[];
   standardType: 'physical' | 'technical';
   pageType?: 'single' | 'multiple';
   isLoading?: boolean;
@@ -99,7 +99,7 @@ function validateValueByStandardType(value: string | number | null) {
   return true;
 }
 
-function getStudentName(student: StudentsValueResponse) {
+function getStudentName(student: StudentValueResponse) {
   if (smAndUp.value) {
     return student.last_name + ' ' + student.first_name + ' ' + student.patronymic;
   }
@@ -199,7 +199,7 @@ function saveData() {
         :disabled="isLoading"
         :max="standardType === 'technical' ? 5 : undefined"
         :rules="[validateValueByStandardType]"
-        :class="standardType === 'technical' ? getMarkColor(item.average_grade ?? 0) + ' mark' : ''"
+        :class="standardType === 'technical' ? getMarkColor(item.average_value ?? 0) + ' mark' : ''"
         @update:model-value="
           trackValueChange(item.id, item.standards_details[0].standard_id, item.average_value)
         "

@@ -15,21 +15,23 @@ import type {
 } from '@/types/types';
 
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { get, getErrorMessage, post } from '@/utils';
+import { getErrorText } from '@/api/http';
 import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { useDisplay } from 'vuetify';
-import SideNavButtons from '@/components/SideNavButtons.vue';
-import LoadingOverlay from '@/components/LoadingOverlay.vue';
+import SideNavButtons from '@/components/shared/ui/SideNavButtons.vue';
+import { getStudents, getStudentsResults, saveStudentsValues } from '@/api/students';
+import { useStandardsStore } from '@/stores/standards';
+import { useClassesStore } from '@/stores/classes';
 
 const router = useRouter();
 const route = useRoute();
 const { smAndUp, width } = useDisplay();
+const standardsStore = useStandardsStore();
+const classesStore = useClassesStore();
 const w800 = computed(() => width.value <= 800);
 
-const pageType = ref<'single' | 'multiple'>(
-  (route.query.pageType as 'single' | 'multiple') || 'single',
-);
+const pageType = ref<DiaryPageType>((route.query.pageType as DiaryPageType) || 'single');
 const isLoading = ref(false);
 
 const activeClassNumber = ref(+route.query.classNumber! || -1);
@@ -37,16 +39,16 @@ const className = ref((route.query.letter as string) || '');
 const selectedStandardId = ref(-1);
 const selectedStandardIds = ref<number[]>([]);
 
-const classesData = ref<ClassRequest[]>([]);
-const standardsData = ref<StandardResponse[]>([]);
-const filteredData = ref<StudentsValueResponse[]>([]);
-const filters = ref<FilterData>({
+const classesData = computed(() => classesStore.classes);
+const standardsData = computed(() => standardsStore.standards);
+const filteredData = ref<StudentValueResponse[]>([]);
+const filters = ref<StudentFilters>({
   gender: null,
   grades: [],
   birthYearFrom: null,
   birthYearUntil: null,
 });
-let studentsValueData: StudentsValueResponse[] = [];
+let studentsValueData: StudentValueResponse[] = [];
 let studentsData: StudentResponse[] = [];
 
 const standardButtonText = computed(() => {
@@ -75,7 +77,7 @@ const classButtonText = computed(() => {
   }
 });
 
-const selectedStandardType = computed<'physical' | 'technical'>(() => {
+const selectedStandardType = computed<StandardType>(() => {
   if (standardsData.value.find((v) => v.id === selectedStandardId.value)?.has_numeric_value) {
     return 'physical';
   } else {
@@ -123,10 +125,6 @@ function sortSelectedStandardIds() {
   });
 }
 
-function updateClassesData(classes: ClassRequest[]) {
-  classesData.value = classes;
-}
-
 function updateStudentsData(students: StudentResponse[], classNumber: number, letter: string) {
   activeClassNumber.value = classNumber;
   className.value = letter;
@@ -152,6 +150,27 @@ function updateStudentsData(students: StudentResponse[], classNumber: number, le
     selectedStandardIds.value = [];
 
   getStudentsData();
+}
+
+async function selectClass(classNumber: number, letter: string) {
+  try {
+    await router.replace({
+      query: {
+        ...route.query,
+        classNumber,
+        letter,
+      },
+    });
+    const students =
+      classNumber === 12
+        ? await getStudents()
+        : await getStudents({ student_class: classNumber + letter });
+    updateStudentsData(students, classNumber, letter);
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
+  }
 }
 
 function setQuery() {
@@ -209,11 +228,9 @@ async function getStudentsData() {
   }
 
   try {
-    const currentStudentsValue: StudentsValueResponse[] = await get('/api/students/results/list/', {
-      'class_id[]': currentClasses,
-      'standard_id[]':
-        pageType.value === 'single' ? selectedStandardId.value : selectedStandardIds.value,
-    }).then((res) => res.json());
+    const standardIds =
+      pageType.value === 'single' ? [selectedStandardId.value] : selectedStandardIds.value;
+    const currentStudentsValue = await getStudentsResults(currentClasses, standardIds);
 
     if (pageType.value === 'multiple' && selectedStandardIds.value.length > 1) {
       studentsValueData = currentStudentsValue.filter(
@@ -239,8 +256,8 @@ async function getStudentsData() {
       });
     }
     acceptFilters();
-  } catch {
-    toast.error('Ошибка при получении данных, попробуйте позже');
+  } catch (error) {
+    toast.error(getErrorText(error, 'Ошибка при получении данных, попробуйте позже'));
   } finally {
     isLoading.value = false;
   }
@@ -265,16 +282,11 @@ function acceptFilters() {
 async function saveStudentsValue(changedData: StudentValueRequest[]) {
   try {
     isLoading.value = true;
-    const response = await post('/api/students/results/create/', changedData);
-
-    if (response.ok) {
-      await getStudentsData();
-      acceptFilters();
-    } else {
-      toast.error(getErrorMessage(await response.json()));
-    }
-  } catch {
-    toast.error('Ошибка при сохранении данных, попробуйте позже');
+    await saveStudentsValues(changedData);
+    await getStudentsData();
+    acceptFilters();
+  } catch (error) {
+    toast.error(getErrorText(error, 'Ошибка при сохранении данных, попробуйте позже'));
   } finally {
     isLoading.value = false;
   }
@@ -291,8 +303,18 @@ function removeStandardId(id: number) {
 }
 
 onMounted(async () => {
-  standardsData.value = await get('/api/standards/').then((res) => res.json());
+  try {
+    await classesStore.fetchClasses();
+    await standardsStore.fetchStandards();
+  } catch (error) {
+    toast.error(
+      getErrorText(error, 'Произошла ошибка во время получения данных, попробуйте еще раз'),
+    );
+  }
   initSelectedStandards();
+  if (activeClassNumber.value !== -1) {
+    await selectClass(activeClassNumber.value, className.value);
+  }
   nextTick();
 });
 </script>
@@ -300,10 +322,11 @@ onMounted(async () => {
 <template>
   <TopPanel v-if="smAndUp" :is-loading class="top-panel">
     <ClassesPanel
-      :classes-data
+      v-model="activeClassNumber"
+      :classes-data="classesData"
+      :selected-letter="className"
       menu
-      @studentsData="updateStudentsData"
-      @classes-data="updateClassesData"
+      @select="selectClass"
     />
     <template #right v-if="w800">
       <BottomSheetWithButton
@@ -333,12 +356,17 @@ onMounted(async () => {
         <BottomSheetWithButton :button-text="classButtonText" sheet-title="Классы" eager>
           <template #default="{ toggle }">
             <ClassesPanel
-              :classes-data
+              v-model="activeClassNumber"
+              :classes-data="classesData"
+              :selected-letter="className"
               menu
               direction-column
-              @studentsData="updateStudentsData"
-              @classes-data="updateClassesData"
-              @buttonClick="toggle"
+              @select="
+                (classNumber, letter) => {
+                  selectClass(classNumber, letter);
+                  toggle();
+                }
+              "
             />
           </template>
         </BottomSheetWithButton>
