@@ -1,18 +1,19 @@
 import { createRouter, createWebHistory, type RouteLocationRaw } from 'vue-router';
 import { useUserStore } from '@/stores/user';
-import HomeView from '@/views/HomeView.vue';
-import LoginView from '@/views/LoginView.vue';
-import MyDiaryView from '@/views/MyDiaryView.vue';
-import MyStandardsView from '@/views/MyStandardsView.vue';
-import ProfileView from '@/views/ProfileView.vue';
-import CreateOrUpdateStandardView from '@/views/CreateOrUpdateStandardView.vue';
-import CreateOrUpdateStudentView from '@/views/CreateOrUpdateStudentView.vue';
-import StudentView from '@/views/StudentView.vue';
-import AboutSiteView from '@/views/AboutSiteView.vue';
-import AboutUsView from '@/views/AboutUsView.vue';
-import MyClassesView from '@/views/MyClassesView.vue';
-import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue';
-import InfoView from '@/views/InfoView.vue';
+import HomeView from '@/views/public/HomeView.vue';
+import LoginView from '@/views/auth/LoginView.vue';
+import MyDiaryView from '@/views/diary/MyDiaryView.vue';
+import MyStandardsView from '@/views/standards/MyStandardsView.vue';
+import ProfileView from '@/views/profile/ProfileView.vue';
+import CreateOrUpdateStandardView from '@/views/standards/CreateOrUpdateStandardView.vue';
+import CreateOrUpdateStudentView from '@/views/students/CreateOrUpdateStudentView.vue';
+import StudentView from '@/views/students/StudentView.vue';
+// import AboutSiteView from '@/views/public/AboutSiteView.vue';
+import AboutUsView from '@/views/public/AboutUsView.vue';
+import MyClassesView from '@/views/classes/MyClassesView.vue';
+import PrivacyPolicyView from '@/views/public/PrivacyPolicyView.vue';
+import InstructionView from '@/views/public/InstructionView.vue';
+import InfoView from '@/views/auth/InfoView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,17 +24,23 @@ const router = createRouter({
       component: HomeView,
       meta: { mobileTitle: 'Дневник тренера' },
     },
-    {
+    /* {
       path: '/about-site',
       name: 'about-site',
       component: AboutSiteView,
       meta: { mobileTitle: 'Дневник тренера' },
-    },
+    }, */
     {
       path: '/about-us',
       name: 'about-us',
       component: AboutUsView,
       meta: { mobileTitle: 'Дневник Тренера' },
+    },
+    {
+      path: '/instruction',
+      name: 'instruction',
+      component: InstructionView,
+      meta: { mobileTitle: 'Инструкция' },
     },
     {
       path: '/privacy-policy',
@@ -151,9 +158,62 @@ const router = createRouter({
     if (savedPosition) {
       return savedPosition;
     }
+    if (to.hash) {
+      return { el: to.hash, top: 80, behavior: 'smooth' };
+    }
     return { top: 0 };
   },
 });
+
+const publicPageSeo: Record<string, { title: string; description: string }> = {
+  '/': {
+    title: 'Дневник Тренера — сервис для спортивных секций',
+    description:
+      'Сервис для ведения базы учеников, спортивных нормативов и отслеживания прогресса тренировок.',
+  },
+  /* '/about-site': {
+    title: 'О сервисе — Дневник Тренера',
+    description:
+      'Узнайте о возможностях сервиса «Дневник Тренера» для спортивных секций и учителей физкультуры.',
+  }, */
+  '/about-us': {
+    title: 'О нас — Дневник Тренера',
+    description: 'Команда сервиса «Дневник Тренера».',
+  },
+  '/instruction': {
+    title: 'Инструкция по работе с сервисом — Дневник Тренера',
+    description:
+      'Пошаговая инструкция для тренеров и учеников: регистрация, классы, нормативы, результаты, отчёты и профиль.',
+  },
+  '/privacy-policy': {
+    title: 'Политика конфиденциальности — Дневник Тренера',
+    description: 'Политика обработки и защиты персональных данных в сервисе «Дневник Тренера».',
+  },
+};
+
+router.afterEach((to) => {
+  const seo = publicPageSeo[to.path];
+  const title = seo?.title ?? 'Дневник Тренера';
+  const description = seo?.description ?? 'Сервис для спортивных секций.';
+  const canonicalUrl = `https://coachdiary.ru${to.path}`;
+  const robots = seo ? 'index, follow' : 'noindex, nofollow';
+
+  document.title = title;
+  setMetaContent('meta[name="description"]', description);
+  setMetaContent('meta[name="robots"]', robots);
+  setMetaContent('meta[property="og:title"]', title);
+  setMetaContent('meta[property="og:description"]', description);
+  setMetaContent('meta[property="og:url"]', canonicalUrl);
+  setMetaContent('meta[name="twitter:title"]', title);
+  setMetaContent('meta[name="twitter:description"]', description);
+  document
+    .querySelector<HTMLLinkElement>('link[rel="canonical"]')
+    ?.setAttribute('href', canonicalUrl);
+});
+
+function setMetaContent(selector: string, content: string): void {
+  document.querySelector<HTMLMetaElement>(selector)?.setAttribute('content', content);
+}
 
 function isAuthenticated(): RouteLocationRaw | undefined {
   if (!useUserStore().isLoggedIn) {

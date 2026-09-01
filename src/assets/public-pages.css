@@ -1,0 +1,12 @@
+.public-page-content {
+  width: min(100% - 48px, 1500px);
+  margin: 0 auto;
+  padding: 52px 0 80px;
+}
+
+@media (max-width: 600px) {
+  .public-page-content {
+    width: min(100% - 32px, 1500px);
+    padding: 32px 0 56px;
+  }
+}

@@ -1,4 +1,5 @@
 import './assets/main.css';
+import './assets/public-pages.css';
 
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
@@ -52,6 +53,14 @@ const myCustomLightTheme = {
     'activated-opacity': 0.12,
     'pressed-opacity': 0.12,
     'dragged-opacity': 0.08,
+    'public-primary-border': 'rgba(var(--v-theme-primary), 0.18)',
+    'public-primary-border-strong': 'rgba(var(--v-theme-primary), 0.28)',
+    'public-primary-tint': 'rgba(var(--v-theme-primary), 0.05)',
+    'public-primary-tint-strong': 'rgba(var(--v-theme-primary), 0.08)',
+    'public-card-shadow': 'rgba(0, 63, 80, 0.08)',
+    'public-info-tint': 'rgba(var(--v-theme-info), 0.12)',
+    'public-warning-tint': 'rgba(var(--v-theme-secondary), 0.35)',
+    'public-danger-tint': 'rgba(var(--v-theme-error), 0.1)',
     'theme-kbd': '#212529',
     'theme-on-kbd': '#FFFFFF',
     'theme-code': '#F5F5F5',

@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia';
-import { get, getErrorMessage, post } from '@/utils';
 import { useRoute, useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { logout as logoutApi } from '@/api/auth';
+import { getProfile } from '@/api/profile';
+import { getErrorText } from '@/api/http';
+import type { UserRole } from '@/types/user';
 
 export const useUserStore = defineStore('user', () => {
   const route = useRoute();
   const router = useRouter();
   const isLoggedIn = ref(localStorage.getItem('isLoggedIn') === 'true');
-  const userType = ref(localStorage.getItem('userType') ?? 'guest');
+  const userType = ref<UserRole>((localStorage.getItem('userType') as UserRole) ?? 'guest');
   const studentId = ref<number | null>(Number(localStorage.getItem('studentId')));
 
   const isStudent = computed(() => userType.value === 'student');
@@ -30,37 +33,32 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function logout() {
-    const response = await post('/api/logout/');
-    if (response.ok) {
+    try {
+      await logoutApi();
       clearLocalStorage();
       await router.push({ name: 'login' });
-    } else {
-      toast.error(getErrorMessage(response));
+    } catch (error) {
+      toast.error(getErrorText(error, 'Не удалось выйти из аккаунта, попробуйте ещё раз'));
     }
   }
 
   async function fetchProfile() {
     try {
-      const response = await get('/api/profile/');
-      if (response.ok) {
-        const data = await response.json();
-        userType.value = data.role;
-        localStorage.setItem('userType', data.role);
-        if (data.role === 'student') {
-          studentId.value = data.id;
-          localStorage.setItem('studentId', String(data.id));
-        }
-        if (!data.is_email_verified) {
-          toast.error('Пожалуйста, подтвердите почту, чтобы получить доступ ко всем функциям');
-        }
-      } else {
-        clearLocalStorage();
-        if (route.fullPath.startsWith('/app')) {
-          await router.push({ name: 'home' });
-        }
+      const data = await getProfile();
+      userType.value = data.role;
+      localStorage.setItem('userType', data.role);
+      if (data.role === 'student') {
+        studentId.value = data.id;
+        localStorage.setItem('studentId', String(data.id));
+      }
+      if (!data.is_email_verified) {
+        toast.error('Пожалуйста, подтвердите почту, чтобы получить доступ ко всем функциям');
       }
     } catch {
-      // намеренно оставлено пустым
+      clearLocalStorage();
+      if (route.fullPath.startsWith('/app')) {
+        await router.push({ name: 'home' });
+      }
     }
   }
 
