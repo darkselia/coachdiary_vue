@@ -23,7 +23,7 @@ const icon = computed(() => {
 </script>
 
 <template>
-  <aside class="public-notice" :class="`public-notice--${type}`" role="alert">
+  <aside class="public-notice" :class="`public-notice--${type}`" role="feed">
     <v-icon :icon size="24" aria-hidden="true" />
     <div>
       <strong>{{ title }}</strong>
