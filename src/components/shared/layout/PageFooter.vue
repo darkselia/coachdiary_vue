@@ -7,7 +7,7 @@ import { RouterLink } from 'vue-router';
     <div class="footer">
       <div class="footer-column">
         <div class="header">Компания</div>
-        <RouterLink :to="{ name: 'about-site' }">О сайте</RouterLink>
+        <!-- <RouterLink :to="{ name: 'about-site' }">О сайте</RouterLink> -->
         <RouterLink :to="{ name: 'about-us' }" variant="text">О нас</RouterLink>
         <RouterLink :to="{ name: 'privacy-policy' }" variant="text">
           Политика конфиденциальности
@@ -17,16 +17,17 @@ import { RouterLink } from 'vue-router';
       <div class="footer-column">
         <div class="header">Возможности</div>
         <RouterLink to="/#Capabilities">Преподавателям</RouterLink>
+        <RouterLink :to="{ name: 'instruction' }">Инструкция</RouterLink>
       </div>
 
       <div class="footer-column">
         <div class="header">Контакты</div>
         <div class="logo">
           <v-btn href="https://t.me/coach0diary" variant="text" target="_blank">
-            <img src="/telegram-svgrepo-com.svg" alt="Telegram" width="24" height="24" />
+            <img src="/icons/telegram.svg" alt="Telegram" width="24" height="24" />
           </v-btn>
           <v-btn href="https://vk.com/coach0diary" variant="text" target="_blank">
-            <img src="/vk-1-logo-svgrepo-com.svg" alt="VK" width="24" height="24" />
+            <img src="/icons/vk.svg" alt="VK" width="24" height="24" />
           </v-btn>
         </div>
         <div>

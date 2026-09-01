@@ -41,15 +41,21 @@ onMounted(() => {
     <v-list-item :key="logoLink.name" :to="logoLink" title="Дневник Тренера" />
     <v-divider class="mb-2" color="rgb(var(--v-theme-primary-darken-1))" />
     <v-list-item href="/#Capabilities" link title="Возможности" />
-    <v-list-item :to="{ name: 'about-site' }" link title="О сайте" />
+    <v-list-item :to="{ name: 'instruction' }" link title="Инструкция" />
+    <!-- <v-list-item :to="{ name: 'about-site' }" link title="О сайте" /> -->
     <v-list-item :to="{ name: 'about-us' }" link title="О нас" />
   </v-navigation-drawer>
 
   <v-app-bar :class="{ 'app-bar': !smAndUp }">
     <v-app-bar-title>
       <router-link v-if="smAndUp" :to="logoLink" class="title">
-        <img v-if="width < 820" alt="logo" class="icon" src="/mobile_man_run_blue.svg" />
-        <img v-else alt="logo" class="icon" src="/mobile_logo_blue.svg" />
+        <img
+          v-if="width < 820"
+          alt="Дневник Тренера"
+          class="icon"
+          src="/logos/coach-diary-runner.svg"
+        />
+        <img v-else alt="Дневник Тренера" class="icon" src="/logos/coach-diary-full.svg" />
       </router-link>
       <div v-else class="text-center mr-4 mobile-title">{{ mobileTitle }}</div>
     </v-app-bar-title>
@@ -63,7 +69,8 @@ onMounted(() => {
         <template v-if="!isLoggedInView">
           <template v-if="smAndUp">
             <v-btn href="/#Capabilities" variant="text">Возможности</v-btn>
-            <v-btn :to="{ name: 'about-site' }" variant="text">О сайте</v-btn>
+            <v-btn :to="{ name: 'instruction' }" variant="text">Инструкция</v-btn>
+            <!-- <v-btn :to="{ name: 'about-site' }" variant="text">О сайте</v-btn> -->
             <v-btn :to="{ name: 'about-us' }" variant="text">О нас</v-btn>
           </template>
 
