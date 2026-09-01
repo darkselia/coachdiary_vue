@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /login
+Disallow: /join/
+Disallow: /reset-password/
+Disallow: /verify-email/
+Disallow: /info/
+
+Sitemap: https://coachdiary.ru/sitemap.xml
