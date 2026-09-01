@@ -22,8 +22,7 @@ const selectedId = defineModel<number>('selectedId', {
   required: false,
 });
 const selectedIds = defineModel<number[]>('selectedIds', {
-  default: [],
-  required: false,
+  default: () => [],
 });
 
 function isActive(itemId: number): boolean {
@@ -35,11 +34,13 @@ function isActive(itemId: number): boolean {
 }
 
 function handleItemClick(itemId: number): void {
-  if (multipleSelect && Array.isArray(selectedIds.value)) {
-    if (selectedIds.value.includes(itemId)) {
-      selectedIds.value = selectedIds.value.filter((id) => id !== itemId);
+  if (multipleSelect) {
+    const ids = selectedIds.value ?? [];
+
+    if (ids.includes(itemId)) {
+      selectedIds.value = ids.filter((id) => id !== itemId);
     } else {
-      selectedIds.value = [...selectedIds.value, itemId];
+      selectedIds.value = [...ids, itemId];
     }
   } else {
     selectedId.value = itemId;

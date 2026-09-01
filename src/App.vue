@@ -20,7 +20,7 @@ const isLoggedInView = computed(() => route.path.startsWith('/app'));
     rich-colors
     expand
     close-button
-    visible-toasts="3"
+    :visible-toasts="3"
     :position="smAndUp ? 'bottom-right' : 'top-center'"
     :offset="'30px'"
   />
