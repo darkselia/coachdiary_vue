@@ -186,7 +186,7 @@ onMounted(async () => {
   <TopPanel :is-loading class="top-panel">
     {{ pageType === 'create-standard' ? 'Создание норматива' : 'Обновление норматива' }}
   </TopPanel>
-  <div v-auto-animate class="grid">
+  <form @submit.prevent="createOrUpdateStandard" v-auto-animate class="grid">
     <FieldSet title="Тип">
       <v-radio-group
         v-model="standardType"
@@ -335,9 +335,9 @@ onMounted(async () => {
       color="primary"
       rounded
       text="Сохранить"
-      @click="createOrUpdateStandard"
+      type="submit"
     />
-  </div>
+  </form>
 </template>
 
 <style scoped>

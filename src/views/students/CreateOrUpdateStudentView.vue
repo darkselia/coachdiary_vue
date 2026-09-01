@@ -97,7 +97,7 @@ onMounted(async () => {
   <TopPanel :is-loading class="top-panel">
     {{ pageType === 'create-student' ? 'Создание ученика' : 'Обновление ученика' }}
   </TopPanel>
-  <div class="container">
+  <form class="container" @submit.prevent="createOrUpdateStudent">
     <div class="names">
       <v-text-field v-model="lastName" :disabled="isLoading" class="text-field" label="Фамилия" />
       <v-text-field v-model="firstName" :disabled="isLoading" class="text-field" label="Имя" />
@@ -153,9 +153,9 @@ onMounted(async () => {
       color="primary"
       rounded
       text="Сохранить"
-      @click="createOrUpdateStudent"
+      type="submit"
     />
-  </div>
+  </form>
 </template>
 
 <style scoped>
