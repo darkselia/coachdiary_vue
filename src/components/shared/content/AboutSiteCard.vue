@@ -1,92 +1,131 @@
-<script lang="ts" setup>
-defineProps<{
-  src: string;
-  mirrored?: boolean;
-}>();
+<script setup lang="ts">
+import PublicSectionHeading from '@/components/shared/content/PublicSectionHeading.vue';
+
+withDefaults(
+  defineProps<{
+    src: string;
+    alt: string;
+    eyebrow: string;
+    title: string;
+    badge?: string;
+    mirrored?: boolean;
+    grayscale?: boolean;
+    aspectRatio?: string | number;
+  }>(),
+  {
+    badge: undefined,
+    mirrored: false,
+    grayscale: false,
+    aspectRatio: 4 / 3,
+  },
+);
 </script>
 
 <template>
-  <div :class="{ mirrored }" class="container">
-    <div class="img-border rounded-xl">
-      <v-img :src alt="" class="img rounded-xl" cover />
+  <article class="about-site-card" :class="{ 'about-site-card--mirrored': mirrored }">
+    <div class="about-site-card__media">
+      <v-img
+        :alt
+        :aspect-ratio="aspectRatio"
+        class="about-site-card__image"
+        :class="{ 'about-site-card__image--grayscale': grayscale }"
+        cover
+        :src
+      />
+      <span v-if="badge" class="about-site-card__badge">{{ badge }}</span>
     </div>
-    <p class="text">
-      <slot />
-    </p>
-  </div>
+
+    <div class="about-site-card__content">
+      <PublicSectionHeading :eyebrow :title><slot /></PublicSectionHeading>
+      <div v-if="$slots.footer" class="about-site-card__footer"><slot name="footer" /></div>
+    </div>
+  </article>
 </template>
 
 <style scoped>
-.container {
+.about-site-card {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
   align-items: center;
-  gap: 120px;
-  margin-top: 40px;
+  overflow: hidden;
+  border: 1px solid var(--v-public-primary-border);
+  border-radius: 24px;
+  background: radial-gradient(
+      circle at 0% 100%,
+      var(--v-public-primary-tint-strong),
+      transparent 40%
+    ),
+    rgb(var(--v-theme-surface));
+  box-shadow: 0 8px 26px var(--v-public-card-shadow);
 }
 
-.mirrored {
-  grid-template-columns: 1fr auto;
+.about-site-card--mirrored {
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
 }
 
-.mirrored .img-border {
-  order: 1;
+.about-site-card--mirrored .about-site-card__media {
+  order: 2;
 }
 
-.mirrored .text {
-  text-align: left;
+.about-site-card__media {
+  position: relative;
+  width: calc(100% - 48px);
+  max-width: 430px;
+  margin: 24px auto;
+  overflow: hidden;
+  border: 1px solid var(--v-public-primary-border);
+  border-radius: 20px;
+  background: var(--v-public-primary-tint);
+  box-shadow: 0 14px 34px rgba(var(--v-theme-primary), 0.14);
 }
 
-.img-border {
-  border: 3px solid #f2df73;
-  padding: 0 10px;
-  height: 400px;
-  aspect-ratio: 0.75;
-}
-
-.img {
-  height: 100%;
+.about-site-card__image--grayscale :deep(img) {
   filter: grayscale(100%);
 }
 
-.text {
-  text-align: right;
-  font-size: 22px;
+.about-site-card__badge {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-primary-darken-1), 0.84);
+  color: white;
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+  font-weight: 700;
 }
 
-@media (max-width: 1200px) {
-  .container {
-    gap: 50px;
-  }
+.about-site-card__content {
+  padding: clamp(30px, 5vw, 72px);
 }
 
-@media (max-width: 950px) {
-  .container {
-    grid-template-rows: auto 1fr;
-    grid-template-columns: 1fr;
-  }
-
-  .mirrored .img-border,
-  .img-border {
-    width: 100%;
-    aspect-ratio: auto;
-    order: 0;
-    height: 200px;
-  }
-
-  .text {
-    text-align: left;
-    font-size: 20px;
-  }
+.about-site-card__footer {
+  margin-top: 26px;
 }
 
 @media (max-width: 800px) {
-  .text {
-    font-size: 16px;
+  .about-site-card,
+  .about-site-card--mirrored {
+    grid-template-columns: 1fr;
   }
 
-  .container {
-    gap: 20px;
+  .about-site-card--mirrored .about-site-card__media {
+    order: 0;
+  }
+
+  .about-site-card__media {
+    margin-bottom: 0;
+  }
+
+  .about-site-card__content {
+    padding: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-site-card__content {
+    padding: 24px;
   }
 }
 </style>

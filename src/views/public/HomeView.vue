@@ -1,119 +1,38 @@
-<script lang="ts" setup>
-import CapabilitiesCard from '@/components/shared/content/CapabilitiesCard.vue';
+<script setup lang="ts">
+import AboutServiceContent from '@/components/shared/content/AboutServiceContent.vue';
 import PageFooter from '@/components/shared/layout/PageFooter.vue';
-import { useDisplay } from 'vuetify';
-
-const { smAndDown } = useDisplay();
 </script>
 
 <template>
-  <v-img class="main-img" cover src="/luthfi-alfarizi-8i_KGxVeLtQ-unsplash.webp">
-    <div class="main-img-overlay">
-      <h1 class="main-text main-header">Дневник Тренера</h1>
-      <!--      <SVGLogo class="icon" />
-            <img src="/mobile_logo_blue (2).png" alt="ss">-->
-      <p class="main-text describe">Универсальное приложение для тренеров спортивных секций</p>
-      <div class="text">
-        <v-btn :to="{ name: 'login' }" class="sigh-up-btn" rounded size="x-large" variant="flat">
+  <main>
+    <v-img class="main-img" cover src="/images/backgrounds/training-session-hero.webp">
+      <div class="main-img-overlay">
+        <h1 class="main-text main-header">Дневник Тренера</h1>
+        <p class="main-text describe">Универсальное приложение для тренеров спортивных секций</p>
+        <v-btn :to="{ name: 'login' }" class="sign-up-btn" rounded size="x-large" variant="flat">
           Зарегистрироваться
         </v-btn>
       </div>
-    </div>
-  </v-img>
+    </v-img>
 
-  <section id="Capabilities" class="anchor-scroll">
-    <h2 class="header">Возможности сервиса</h2>
-
-    <v-carousel v-if="smAndDown" :show-arrows="false" height="330" cycle>
-      <v-carousel-item content-class="carousel-item">
-        <CapabilitiesCard icon="mdi-arrow-up-thin-circle-outline" title="Вход и создание аккаунта">
-          Пользователи могут создать собственный аккаунт “Дневника Тренера”. Это обеспечивает
-          безопасность данных, и позволяет каждому тренеру персонализировать свой опыт использования
-          платформы.
-        </CapabilitiesCard>
-      </v-carousel-item>
-      <v-carousel-item content-class="carousel-item">
-        <CapabilitiesCard
-          icon="mdi-filter-cog-outline"
-          title="Фильтрация для эффективного поиска в базе учеников"
-        >
-          Наш сервис позволяет тренерам быстро находить нужную информацию о учениках, фильтруя
-          данные по дисциплинам, классам или результатам. Такая функция облегчит планирование
-          тренировок и отслеживание прогресса учеников.
-        </CapabilitiesCard>
-      </v-carousel-item>
-      <v-carousel-item content-class="carousel-item">
-        <CapabilitiesCard icon="mdi-database-outline" title="Управление базой нормативов">
-          Пользователь может создавать таблицы нормативов, представленные спортивными федерациями
-          или собственными тренировочными программами. Нормативы возможно просматривать и обновлять
-          в любое время!
-        </CapabilitiesCard>
-      </v-carousel-item>
-      <v-carousel-item content-class="carousel-item">
-        <CapabilitiesCard
-          icon="mdi-information-slab-circle-outline"
-          title="Работа с информацией об учениках"
-        >
-          Функционал “Дневника Тренера” позволяет удобно управлять информацией об учениках, включая
-          их личные данные, спортивный класс, достигнутые результаты и прогресс по нормативам.
-        </CapabilitiesCard>
-      </v-carousel-item>
-    </v-carousel>
-
-    <div v-else class="cap-container">
-      <CapabilitiesCard icon="mdi-arrow-up-thin-circle-outline" title="Вход и создание аккаунта">
-        Пользователи могут создать собственный аккаунт “Дневника Тренера”. Это обеспечивает
-        безопасность данных, и позволяет каждому тренеру персонализировать свой опыт использования
-        платформы.
-      </CapabilitiesCard>
-      <CapabilitiesCard
-        icon="mdi-filter-cog-outline"
-        title="Фильтрация для эффективного поиска в базе учеников"
-      >
-        Наш сервис позволяет тренерам быстро находить нужную информацию о учениках, фильтруя данные
-        по дисциплинам, классам или результатам. Такая функция облегчит планирование тренировок и
-        отслеживание прогресса учеников.
-      </CapabilitiesCard>
-      <CapabilitiesCard icon="mdi-database-outline" title="Управление базой нормативов">
-        Пользователь может создавать таблицы нормативов, представленные спортивными федерациями или
-        собственными тренировочными программами. Нормативы возможно просматривать и обновлять в
-        любое время!
-      </CapabilitiesCard>
-      <CapabilitiesCard
-        icon="mdi-information-slab-circle-outline"
-        title="Работа с информацией об учениках"
-      >
-        Функционал “Дневника тренера” позволяет удобно управлять информацией об учениках, включая их
-        личные данные, спортивный класс, достигнутые результаты и прогресс по нормативам.
-      </CapabilitiesCard>
-    </div>
-    <p class="text">
-      Каждая из возможностей разработана с учетом потребностей тренеров и учителей физкультуры,
-      поэтому наш сервис максимально облегчает управление тренировочным процессом и отслеживанием
-      успеваемости учеников. “Дневник Тренера” стремится предоставить инструменты для создания
-      оптимальной тренировочной среды, способствующей развитию и достижению лучших результатов.
-    </p>
-  </section>
-
+    <AboutServiceContent />
+  </main>
   <PageFooter />
 </template>
 
 <style scoped>
-.anchor-scroll {
-  scroll-margin-top: 64px;
-}
-
 .main-img {
   height: calc(100dvh - 64px);
 }
 
 .main-img-overlay {
-  backdrop-filter: brightness(80%);
   display: flex;
   flex-direction: column;
   height: 100%;
   align-items: center;
   justify-content: center;
+  padding: 24px;
+  backdrop-filter: brightness(80%);
   text-align: center;
   font-family: 'Roboto Condensed', sans-serif;
 }
@@ -126,79 +45,40 @@ const { smAndDown } = useDisplay();
     var(--border-size) calc(-1 * var(--border-size)) 0 rgb(var(--v-theme-primary)),
     calc(-1 * var(--border-size)) var(--border-size) 0 rgb(var(--v-theme-primary)),
     var(--border-size) var(--border-size) 0 rgb(var(--v-theme-primary));
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .main-header {
-  font-size: 80px;
+  margin: 0;
+  font-size: clamp(48px, 8vw, 80px);
+  line-height: 1.05;
   text-transform: uppercase;
-}
-
-.icon {
-  height: 250px;
-  color: black;
 }
 
 .describe {
   --border-size: 2px;
-  font-size: 25px;
   width: 700px;
   max-width: 100%;
+  margin: 20px 0 30px;
+  font-size: clamp(20px, 3vw, 25px);
 }
 
-section {
-  padding-top: 60px;
-  margin: 0 50px 80px;
-  font-size: 22px;
+.sign-up-btn {
+  font-size: 20px;
 }
 
-.header {
-  text-align: center;
-  font-size: 40px;
-  color: rgb(var(--v-theme-primary));
-  margin-bottom: 40px;
-}
+@media (max-width: 600px) {
+  .main-img {
+    height: max(520px, calc(100dvh - 45px));
+  }
 
-.text {
-  text-align: center;
-  margin: 30px auto 0;
-  max-width: 1200px;
-}
-
-.sigh-up-btn {
-  font-size: 22px;
-}
-
-.cap-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 800px) {
   .main-header {
-    font-size: 60px;
+    font-size: clamp(42px, 15vw, 60px);
   }
 
-  .describe {
-    font-size: 20px;
-  }
-
-  .cap-container {
-    grid-template-columns: 1fr;
-  }
-
-  .header {
-    font-size: 30px;
-  }
-
-  section {
-    padding-top: 30px;
-    margin: 0 20px 30px;
-  }
-
-  .text {
-    font-size: 16px;
+  .sign-up-btn {
+    width: min(100%, 320px);
+    font-size: 17px;
   }
 }
 </style>

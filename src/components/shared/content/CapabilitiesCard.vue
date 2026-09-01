@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 defineProps<{
   icon: string;
   title: string;
@@ -6,45 +6,70 @@ defineProps<{
 </script>
 
 <template>
-  <div class="card rounded-lg">
-    <v-icon :icon size="48px" />
-    <p class="title">{{ title }}</p>
-    <p class="description">
-      <slot />
-    </p>
-  </div>
+  <article class="capability-card">
+    <div class="capability-card__icon" aria-hidden="true">
+      <v-icon :icon size="34" />
+    </div>
+    <h3>{{ title }}</h3>
+    <div class="capability-card__description"><slot /></div>
+  </article>
 </template>
 
 <style scoped>
-.card {
+.capability-card {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto 1fr;
-  gap: 30px;
-  text-align: center;
-  align-items: stretch;
+  gap: 18px 20px;
+  height: 100%;
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px solid var(--v-public-primary-border);
+  border-radius: 20px;
+  background: radial-gradient(
+      circle at 100% 0%,
+      var(--v-public-primary-tint-strong),
+      transparent 46%
+    ),
+    rgb(var(--v-theme-surface));
+  box-shadow: 0 8px 24px var(--v-public-card-shadow);
+}
+
+.capability-card__icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 16px;
+  background: rgb(var(--v-theme-primary));
+  color: white;
+}
+
+h3 {
+  align-self: center;
+  margin: 0;
   color: rgb(var(--v-theme-primary));
-  padding: 20px 20px 30px 20px;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgb(var(--v-theme-surface-bright));
-  font-size: 20px;
+  font-size: clamp(19px, 2vw, 24px);
+  line-height: 1.25;
 }
 
-.title {
-  border-bottom: 2px solid rgb(var(--v-theme-surface-bright));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.capability-card__description {
+  grid-column: 1 / -1;
 }
 
-.description {
-  grid-column: 1 / span 2;
-  color: black;
+.capability-card__description :deep(p) {
+  margin: 0;
+  color: rgb(var(--v-theme-on-background));
+  font-size: 16px;
+  line-height: 1.65;
 }
 
-@media (max-width: 800px) {
-  .card {
-    font-size: 16px;
+@media (max-width: 480px) {
+  .capability-card {
+    grid-template-columns: 1fr;
+  }
+
+  .capability-card__description {
+    grid-column: 1;
   }
 }
 </style>
