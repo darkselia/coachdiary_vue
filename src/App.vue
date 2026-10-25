@@ -7,6 +7,7 @@ import { useDisplay } from 'vuetify';
 import { computed } from 'vue';
 import { Toaster } from 'vue-sonner';
 import ConfirmDialog from '@/components/shared/ui/ConfirmDialog.vue';
+import CookieNotice from '@/components/shared/layout/CookieNotice.vue';
 
 useUserStore().fetchProfile();
 
@@ -30,6 +31,7 @@ const isLoggedInView = computed(() => route.path.startsWith('/app'));
       <RouterView />
     </v-main>
     <BottomAppBar v-if="!smAndUp && isLoggedInView" />
+    <CookieNotice />
     <ConfirmDialog />
   </v-app>
 </template>

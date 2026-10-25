@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteLocationRaw } from 'vue-router';
+import { nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import HomeView from '@/views/public/HomeView.vue';
 import LoginView from '@/views/auth/LoginView.vue';
@@ -11,9 +12,11 @@ import StudentView from '@/views/students/StudentView.vue';
 // import AboutSiteView from '@/views/public/AboutSiteView.vue';
 import AboutUsView from '@/views/public/AboutUsView.vue';
 import MyClassesView from '@/views/classes/MyClassesView.vue';
-import PrivacyPolicyView from '@/views/public/PrivacyPolicyView.vue';
+import PrivacyView from '@/views/public/PrivacyView.vue';
 import InstructionView from '@/views/public/InstructionView.vue';
 import InfoView from '@/views/auth/InfoView.vue';
+import TermsView from '@/views/public/TermsView.vue';
+import DPAView from '@/views/public/DPAView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,12 +43,24 @@ const router = createRouter({
       path: '/instruction',
       name: 'instruction',
       component: InstructionView,
-      meta: { mobileTitle: 'Инструкция' },
+      meta: { mobileTitle: 'Дневник Тренера' },
     },
     {
-      path: '/privacy-policy',
-      name: 'privacy-policy',
-      component: PrivacyPolicyView,
+      path: '/privacy',
+      name: 'privacy',
+      component: PrivacyView,
+      meta: { mobileTitle: 'Дневник Тренера' },
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: TermsView,
+      meta: { mobileTitle: 'Дневник Тренера' },
+    },
+    {
+      path: '/dpa',
+      name: 'dpa',
+      component: DPAView,
       meta: { mobileTitle: 'Дневник Тренера' },
     },
     {
@@ -154,11 +169,12 @@ const router = createRouter({
       beforeEnter: isAuthenticated,
     },
   ],
-  scrollBehavior(to, from, savedPosition) {
+  async scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition;
     }
     if (to.hash) {
+      await nextTick();
       return { el: to.hash, top: 80, behavior: 'smooth' };
     }
     return { top: 0 };
@@ -185,9 +201,17 @@ const publicPageSeo: Record<string, { title: string; description: string }> = {
     description:
       'Пошаговая инструкция для тренеров и учеников: регистрация, классы, нормативы, результаты, отчёты и профиль.',
   },
-  '/privacy-policy': {
-    title: 'Политика конфиденциальности — Дневник Тренера',
+  '/privacy': {
+    title: 'Политика обработки данных — Дневник Тренера',
     description: 'Политика обработки и защиты персональных данных в сервисе «Дневник Тренера».',
+  },
+  '/terms': {
+    title: 'Пользовательское соглашение — Дневник Тренера',
+    description: 'Пользовательское соглашение в сервисе «Дневник Тренера».',
+  },
+  '/dpa': {
+    title: 'Поручение на обработку персональных данных — Дневник Тренера',
+    description: 'Поручение на обработку персональных данных в сервисе «Дневник Тренера».',
   },
 };
 
