@@ -12,11 +12,7 @@ import {
   signUp as signUpApi,
 } from '@/api/auth';
 import { getErrorText } from '@/api/http';
-import type {
-  InvitationResponse,
-  LoginPageType,
-  RegistrationRequest,
-} from '@/types/auth';
+import type { InvitationResponse, LoginPageType, RegistrationRequest } from '@/types/auth';
 import type { PasswordFieldType } from '@/types/ui';
 
 const pageType = ref<LoginPageType>('signIn');
@@ -24,7 +20,7 @@ const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 
-const privacyPolicy = ref(false);
+const termsAccepted = ref(false);
 const firstName = ref('');
 const lastName = ref('');
 const patronymic = ref('');
@@ -65,7 +61,7 @@ const isSendButtonDisabled = computed(() => {
       !lastName.value?.length ||
       !passwordConfirmation.value?.length ||
       password.value !== passwordConfirmation.value ||
-      !privacyPolicy.value
+      !termsAccepted.value
     );
   }
   if (pageType.value === 'restore') {
@@ -157,6 +153,7 @@ async function signUp() {
   patronymic.value = '';
   passwordConfirmation.value = '';
   invitationToken.value = '';
+  termsAccepted.value = false;
   toast.success('Регистрация успешна. Проверьте вашу почту для подтверждения аккаунта.');
 }
 
@@ -298,12 +295,31 @@ onMounted(async () => {
           variant="outlined"
         />
 
-        <v-checkbox v-if="pageType === 'signUp'" v-model="privacyPolicy" :disabled="isLoading">
+        <v-checkbox
+          v-if="pageType === 'signUp'"
+          v-model="termsAccepted"
+          :disabled="isLoading"
+          style="text-align: start"
+        >
           <template #label>
             <span>
-              Я соглашаюсь с
-              <RouterLink :to="{ name: 'privacy-policy' }" target="_blank">
-                политикой в отношении персональных данных
+              Я принимаю условия
+              <RouterLink
+                :to="{ name: 'terms' }"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+              >
+                Пользовательского соглашения
+              </RouterLink>
+              и подтверждаю ознакомление с
+              <RouterLink
+                :to="{ name: 'privacy' }"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+              >
+                Политикой в отношении обработки персональных данных
               </RouterLink>
             </span>
           </template>

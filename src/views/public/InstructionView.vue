@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import GuideSection from '@/components/shared/content/GuideSection.vue';
 import GuideSteps from '@/components/shared/content/GuideSteps.vue';
 import PageFooter from '@/components/shared/layout/PageFooter.vue';
@@ -8,9 +9,22 @@ import PublicNotice from '@/components/shared/content/PublicNotice.vue';
 
 type Audience = 'teacher' | 'student';
 
-const isScrollToTopVisible = ref(false);
+const route = useRoute();
+const router = useRouter();
 const activeAudience = ref<Audience>('teacher');
 let mediaObserver: IntersectionObserver | undefined;
+
+watch(
+  () => route.hash,
+  (hash) => {
+    if (hash === '#student' || hash === '#student-results') {
+      activeAudience.value = 'student';
+    } else if (['', '#teacher', '#students', '#standards', '#diary', '#reports'].includes(hash)) {
+      activeAudience.value = 'teacher';
+    }
+  },
+  { immediate: true, flush: 'sync' },
+);
 
 function observeRenderedVideos(): void {
   mediaObserver?.disconnect();
@@ -35,26 +49,11 @@ const audienceContents = computed(() =>
       ],
 );
 
-function updateScrollToTopVisibility(): void {
-  isScrollToTopVisible.value = window.scrollY >= window.innerHeight;
-}
-
-function scrollToTop(): void {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 function selectAudience(audience: Audience): void {
-  activeAudience.value = audience;
-  scrollToTop();
+  void router.push({ name: 'instruction', hash: `#${audience}` });
 }
 
 onMounted(() => {
-  if (window.location.hash === '#student' || window.location.hash === '#student-results') {
-    activeAudience.value = 'student';
-  }
-  updateScrollToTopVisibility();
-  window.addEventListener('scroll', updateScrollToTopVisibility, { passive: true });
-
   mediaObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -75,7 +74,6 @@ onMounted(() => {
 watch(activeAudience, () => nextTick(observeRenderedVideos), { flush: 'post' });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', updateScrollToTopVisibility);
   mediaObserver?.disconnect();
   mediaObserver = undefined;
 });
@@ -93,7 +91,7 @@ onUnmounted(() => {
     <div class="content-layout">
       <nav class="contents" aria-label="Содержание инструкции">
         <v-btn-toggle
-          v-model="activeAudience"
+          :model-value="activeAudience"
           class="audience-switcher"
           color="primary"
           mandatory
@@ -103,7 +101,13 @@ onUnmounted(() => {
           <v-btn value="student" prepend-icon="mdi-account-school-outline">Я ученик</v-btn>
         </v-btn-toggle>
         <h2>Содержание</h2>
-        <a v-for="item in audienceContents" :key="item.href" :href="item.href">{{ item.label }}</a>
+        <RouterLink
+          v-for="item in audienceContents"
+          :key="item.href"
+          :to="{ name: 'instruction', hash: item.href }"
+        >
+          {{ item.label }}
+        </RouterLink>
       </nav>
 
       <article class="guide">
@@ -525,18 +529,6 @@ onUnmounted(() => {
     </div>
   </main>
 
-  <v-btn
-    v-show="isScrollToTopVisible"
-    class="scroll-to-top"
-    color="primary"
-    elevation="6"
-    prepend-icon="mdi-arrow-up"
-    rounded="pill"
-    text="Вверх"
-    aria-label="Вернуться к началу страницы"
-    @click="scrollToTop"
-  />
-
   <PageFooter />
 </template>
 
@@ -647,24 +639,6 @@ onUnmounted(() => {
   margin-top: 20px;
 }
 
-.back-to-top {
-  padding-top: 32px;
-  text-align: right;
-}
-
-.back-to-top a {
-  color: rgb(var(--v-theme-primary));
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.scroll-to-top {
-  position: fixed;
-  right: 28px;
-  bottom: 28px;
-  z-index: 1100;
-}
-
 @media (max-width: 900px) {
   .content-layout {
     grid-template-columns: 1fr;
@@ -703,11 +677,6 @@ onUnmounted(() => {
 
   .guide-section h3 {
     font-size: 21px;
-  }
-
-  .scroll-to-top {
-    right: 16px;
-    bottom: 16px;
   }
 }
 </style>

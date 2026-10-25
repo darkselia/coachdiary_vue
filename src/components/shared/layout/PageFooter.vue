@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import ScrollToTop from '@/components/shared/ui/ScrollToTop.vue';
 </script>
 
 <template>
@@ -9,15 +10,14 @@ import { RouterLink } from 'vue-router';
         <div class="header">Компания</div>
         <!-- <RouterLink :to="{ name: 'about-site' }">О сайте</RouterLink> -->
         <RouterLink :to="{ name: 'about-us' }" variant="text">О нас</RouterLink>
-        <RouterLink :to="{ name: 'privacy-policy' }" variant="text">
-          Политика конфиденциальности
-        </RouterLink>
+        <RouterLink :to="{ name: 'privacy' }" variant="text">Политика обработки данных</RouterLink>
+        <RouterLink :to="{ name: 'terms' }">Пользовательское соглашение</RouterLink>
       </div>
 
       <div class="footer-column">
         <div class="header">Возможности</div>
-        <RouterLink to="/#Capabilities">Преподавателям</RouterLink>
-        <RouterLink :to="{ name: 'instruction' }">Инструкция</RouterLink>
+        <RouterLink :to="{ name: 'instruction', hash: '#teacher' }">Преподавателям</RouterLink>
+        <RouterLink :to="{ name: 'instruction', hash: '#student' }">Ученикам</RouterLink>
       </div>
 
       <div class="footer-column">
@@ -37,6 +37,7 @@ import { RouterLink } from 'vue-router';
       </div>
     </div>
   </footer>
+  <ScrollToTop />
 </template>
 
 <style scoped>
